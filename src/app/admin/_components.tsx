@@ -164,7 +164,7 @@ function PlayerFormDialog({ mode, player }: { mode: "create" | "edit"; player?: 
               <Plus /> Thêm
             </Button>
           ) : (
-            <Button size="icon-sm" variant="ghost" aria-label="Sửa" />
+            <Button size="icon-sm" variant="ghost" aria-label="Sửa" className="bg-muted hover:bg-muted/70" />
           )
         }
       >
@@ -292,7 +292,7 @@ function GroupsSection({ kind, groups }: { kind: Content; groups: Group[] }) {
                 <ChevronRight className="ml-auto size-4 text-muted-foreground" />
               </Link>
               <div className="ml-2 flex gap-0.5">
-                <Button size="icon-sm" variant="ghost" aria-label="Sửa">
+                <Button size="icon-sm" variant="ghost" aria-label="Sửa" className="bg-muted hover:bg-muted/70">
                   <Pencil />
                 </Button>
                 <ConfirmDeleteButton label={`bảng "${g.name}"`} />
@@ -1014,6 +1014,7 @@ function LockToggleButton({
         size={compact ? "icon-xs" : "icon-sm"}
         aria-label="Mở lại để sửa"
         title="Mở lại để sửa"
+        className="bg-muted hover:bg-muted/70"
       >
         <LockOpen />
       </Button>
@@ -1069,6 +1070,7 @@ function EditMatchDialog({
             variant="ghost"
             aria-label="Sửa tỉ số"
             disabled={disabled}
+            className="bg-muted hover:bg-muted/70"
           />
         }
       >
@@ -1119,8 +1121,9 @@ function EditMatchDialog({
                   aria-label="Xoá ván"
                   onClick={() => removeRow(i)}
                   disabled={rows.length <= 1}
+                  className="bg-destructive/10 hover:bg-destructive/20"
                 >
-                  <Trash2 className="text-muted-foreground" />
+                  <Trash2 className="text-destructive" />
                 </Button>
               </div>
             ))}
@@ -1377,7 +1380,7 @@ function KnockoutMatchCard({
 function ConfirmDeleteButton({ label }: { label: string }) {
   return (
     <Dialog>
-      <DialogTrigger render={<Button size="icon-sm" variant="ghost" aria-label="Xoá" />}>
+      <DialogTrigger render={<Button size="icon-sm" variant="ghost" aria-label="Xoá" className="bg-destructive/10 hover:bg-destructive/20" />}>
         <Trash2 className="text-destructive" />
       </DialogTrigger>
       <DialogContent>
