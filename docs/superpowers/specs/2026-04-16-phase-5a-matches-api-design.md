@@ -398,6 +398,13 @@ export const TeamMatchPatchSchema = z.object({
 }).refine(
   data => data.status !== 'forfeit' || data.winner != null,
   { message: "Forfeit yêu cầu winner" }
+).refine(
+  data => {
+    if (!data.individual) return true;
+    const ids = data.individual.map(s => s.id);
+    return new Set(ids).size === ids.length;
+  },
+  { message: "Sub-match ID trùng trong array" }
 );
 
 export type MatchResolved = {
@@ -579,7 +586,7 @@ export type TeamMatchResolved = {
 9. Add sub mới (kind=singles) → save → verify 4 sub.
 10. Click "Tạo lại lịch" → confirm → verify toast `"Giữ N / Xóa 0 / Thêm 0"`.
 11. Vào admin groups → swap pair p05 từ gB sang gA → quay lại `/admin/doubles/groups/gA` → click "Tạo lại lịch" → verify toast `"Giữ 3 / Xóa 0 / Thêm 3"`.
-12. `tsc --noEmit` clean. `bun test` pass. `bun run build` 18+ routes.
+12. `tsc --noEmit` clean. `bun test` pass. `bun run build` 22+ routes (Phase 4 = 18 + 4 mới: 2 PATCH match + 2 POST regenerate).
 
 ### Counts target
 
@@ -634,7 +641,7 @@ Phase 4 = 165 tests. Phase 5A target ~84 tests mới → **~249 total**.
 
 **R7 — Team match individual array có ID conflicts khi add/remove**
 - *Risk:* Sub IDs phải unique trong array. Admin add sub mới cần ID generation.
-- *Mitigation:* Sub ID = match-id + nanoid suffix. Server validate uniqueness trong array.
+- *Mitigation:* Sub ID = match-id + nanoid suffix (client-side khi add). Zod `TeamMatchPatchSchema` refine validate uniqueness trong array.
 
 **R8 — Mock Group/DoublesMatch type drift**
 - *Risk:* `_home.ts` còn dùng mock types — Phase 5A migrate `_components.tsx` to `MatchResolved` có thể require Group casting hack.
