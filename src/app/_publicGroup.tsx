@@ -15,23 +15,34 @@ import {
 import { groupColor } from "./_groupColors";
 import { getStandings, type StandingRow } from "./_home";
 import {
-  MOCK_DOUBLES_GROUPS,
   MOCK_DOUBLES_MATCHES,
-  MOCK_TEAM_GROUPS,
   MOCK_TEAM_MATCHES,
   TEAM_MATCH_TEMPLATE,
   type DoublesMatch,
-  type Group,
   type IndividualMatch,
   type SetScore,
   type TeamMatch,
 } from "./admin/_mock";
+import type { GroupResolved } from "@/lib/schemas/group";
 
-export function GroupStageTabs({ kind }: { kind: "doubles" | "teams" }) {
-  const groups = kind === "doubles" ? MOCK_DOUBLES_GROUPS : MOCK_TEAM_GROUPS;
+export function GroupStageTabs({
+  kind,
+  groups,
+}: {
+  kind: "doubles" | "teams";
+  groups: GroupResolved[];
+}) {
   const entryLabel = kind === "doubles" ? "cặp" : "đội";
-  const [active, setActive] = useState(groups[0].id);
+  const [active, setActive] = useState(groups[0]?.id ?? "");
   const activeGroup = groups.find((g) => g.id === active) ?? groups[0];
+
+  if (!activeGroup) {
+    return (
+      <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
+        Chưa có bảng nào.
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -77,11 +88,12 @@ function GroupTabContent({
   entryLabel,
 }: {
   kind: "doubles" | "teams";
-  group: Group;
+  group: GroupResolved;
   entryLabel: string;
 }) {
   const c = groupColor(group.id);
-  const standings = getStandings(kind, group.id);
+  const entryLabels = group.entries.map((e) => e.label);
+  const standings = getStandings(kind, group.id, entryLabels);
   const played = standings.some((s) => s.played > 0);
   const top1 = standings[0];
   const top2 = standings[1];
@@ -123,11 +135,11 @@ function GroupTabContent({
         </div>
         <ol className="space-y-1 text-sm">
           {group.entries.map((e, i) => (
-            <li key={e + i} className="flex items-center gap-2">
+            <li key={e.id} className="flex items-center gap-2">
               <span className="inline-flex size-5 shrink-0 items-center justify-center rounded bg-muted text-xs text-muted-foreground">
                 {i + 1}
               </span>
-              <span className="truncate">{e}</span>
+              <span className="truncate">{e.label}</span>
             </li>
           ))}
         </ol>
@@ -137,7 +149,7 @@ function GroupTabContent({
       <MatchesAccordion group={group} kind={kind} />
 
       {/* BXH chi tiết - dialog */}
-      <StandingsDialog group={group} kind={kind} />
+      <StandingsDialog group={group} kind={kind} entries={entryLabels} />
     </div>
   );
 }
@@ -183,11 +195,13 @@ function TopEntryCard({
 function StandingsDialog({
   group,
   kind,
+  entries,
 }: {
-  group: Group;
+  group: GroupResolved;
   kind: "doubles" | "teams";
+  entries: string[];
 }) {
-  const standings = getStandings(kind, group.id);
+  const standings = getStandings(kind, group.id, entries);
   const diffLabel = kind === "doubles" ? "Hiệu số ván" : "Hiệu số trận cá nhân";
 
   return (
@@ -265,7 +279,7 @@ function MatchesAccordion({
   group,
   kind,
 }: {
-  group: Group;
+  group: GroupResolved;
   kind: "doubles" | "teams";
 }) {
   const isDoubles = kind === "doubles";

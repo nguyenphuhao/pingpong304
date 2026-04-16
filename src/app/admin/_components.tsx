@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import {
@@ -33,7 +32,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type {
   Content,
   DoublesMatch,
-  Group,
   IndividualMatch,
   KnockoutMatch,
   MatchStatus,
@@ -47,10 +45,12 @@ import type {
 import { MOCK_TEAMS, ROUND_LABEL, TEAM_MATCH_TEMPLATE } from "./_mock";
 import type { PairWithNames } from "@/lib/schemas/pair";
 import type { TeamWithNames } from "@/lib/schemas/team";
+import type { GroupResolved } from "@/lib/schemas/group";
 import { groupColor } from "../_groupColors";
 import { PlayersSection } from "./_players-section";
 import { PairsSection } from "./_pairs-section";
 import { TeamsSection } from "./_teams-section";
+import { GroupsSection } from "./_groups-section";
 
 const DEFAULT_TAB = "players";
 const TAB_VALUES = ["players", "entries", "groups", "ko"] as const;
@@ -75,7 +75,7 @@ export function ContentWorkspace({
   players: Player[];
   pairs?: PairWithNames[];
   teams?: TeamWithNames[];
-  groups: Group[];
+  groups: GroupResolved[];
   knockout: KnockoutMatch[];
   knockoutNote?: string;
 }) {
@@ -118,7 +118,7 @@ export function ContentWorkspace({
         )}
       </TabsContent>
       <TabsContent value="groups" className="mt-4">
-        <GroupsSection kind={kind} groups={groups} />
+        <GroupsSection kind={kind} groups={groups} pairs={pairs} teams={teams} />
       </TabsContent>
       <TabsContent value="ko" className="mt-4">
         <KnockoutSection kind={kind} matches={knockout} note={knockoutNote} />
@@ -153,56 +153,7 @@ export function SectionHeader({
 
 /* ---------- Cặp + Đội: extracted to _pairs-section.tsx / _teams-section.tsx ---------- */
 
-/* ---------- Bảng đấu ---------- */
-
-function GroupsSection({ kind, groups }: { kind: Content; groups: Group[] }) {
-  const entryLabel = kind === "doubles" ? "cặp" : "đội";
-  const base = kind === "doubles" ? "/admin/doubles/groups" : "/admin/teams/groups";
-  return (
-    <div>
-      <SectionHeader title="Bảng đấu" subtitle={`${groups.length} bảng · bấm để xem lịch`} />
-      <div className="flex flex-col gap-3">
-        {groups.map((g) => {
-          const c = groupColor(g.id);
-          return (
-          <Card key={g.id} className={`p-4 ${c.border} ${c.bg}`}>
-            <div className="mb-3 flex items-center justify-between">
-              <Link href={`${base}/${g.id}`} className="flex min-w-0 flex-1 items-center gap-2">
-                <span className={`flex size-8 shrink-0 items-center justify-center rounded-lg font-semibold ${c.badge}`}>
-                  {g.name.replace(/^Bảng\s*/i, "")}
-                </span>
-                <div className="min-w-0">
-                  <div className="font-semibold">{g.name}</div>
-                  <div className="text-sm text-muted-foreground">
-                    {g.entries.length} {entryLabel} · xem lịch vòng bảng
-                  </div>
-                </div>
-                <ChevronRight className="ml-auto size-4 text-muted-foreground" />
-              </Link>
-              <div className="ml-2 flex gap-0.5">
-                <Button size="icon-sm" variant="ghost" aria-label="Sửa" className="bg-muted hover:bg-muted/70">
-                  <Pencil />
-                </Button>
-                <ConfirmDeleteButton label={`bảng "${g.name}"`} />
-              </div>
-            </div>
-            <ul className="space-y-1.5 text-sm">
-              {g.entries.map((e, i) => (
-                <li key={e + i} className="flex items-center gap-2">
-                  <span className="inline-flex size-5 items-center justify-center rounded bg-muted text-sm text-muted-foreground">
-                    {i + 1}
-                  </span>
-                  {e}
-                </li>
-              ))}
-            </ul>
-          </Card>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
+/* ---------- Bảng đấu: extracted to _groups-section.tsx ---------- */
 
 /* ---------- Schedule ---------- */
 

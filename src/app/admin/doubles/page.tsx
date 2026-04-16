@@ -2,9 +2,10 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ContentWorkspace } from "../_components";
-import { MOCK_DOUBLES_GROUPS, MOCK_DOUBLES_KO } from "../_mock";
+import { MOCK_DOUBLES_KO } from "../_mock";
 import { supabaseServer } from "@/lib/supabase/server";
 import { fetchPairs } from "@/lib/db/pairs";
+import { fetchDoublesGroups } from "@/lib/db/groups";
 import type { Player } from "../_mock";
 
 export const dynamic = "force-dynamic";
@@ -25,7 +26,11 @@ async function fetchPlayers(): Promise<Player[]> {
 }
 
 export default async function DoublesAdminPage() {
-  const [players, pairs] = await Promise.all([fetchPlayers(), fetchPairs()]);
+  const [players, pairs, groups] = await Promise.all([
+    fetchPlayers(),
+    fetchPairs(),
+    fetchDoublesGroups(),
+  ]);
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-4 pb-8">
@@ -50,7 +55,7 @@ export default async function DoublesAdminPage() {
         }
         players={players}
         pairs={pairs}
-        groups={MOCK_DOUBLES_GROUPS}
+        groups={groups}
         knockout={MOCK_DOUBLES_KO}
       />
     </main>

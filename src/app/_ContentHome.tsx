@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { Shield, Swords, Trophy, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
 import { GroupStageTabs } from "./_publicGroup";
 import { PublicKnockoutSection } from "./_publicKnockout";
 import {
@@ -9,8 +8,15 @@ import {
   MOCK_TEAM_KO,
   TEAM_FINAL_NOTE,
 } from "./admin/_mock";
+import type { GroupResolved } from "@/lib/schemas/group";
 
-export function ContentHome({ kind }: { kind: "doubles" | "teams" }) {
+export function ContentHome({
+  kind,
+  groups,
+}: {
+  kind: "doubles" | "teams";
+  groups: GroupResolved[];
+}) {
   const isDoubles = kind === "doubles";
   const ko = isDoubles ? MOCK_DOUBLES_KO : MOCK_TEAM_KO;
 
@@ -47,7 +53,7 @@ export function ContentHome({ kind }: { kind: "doubles" | "teams" }) {
         title="Vòng bảng"
         subtitle="Chọn bảng để xem"
       >
-        <GroupStageTabs kind={kind} />
+        <GroupStageTabs kind={kind} groups={groups} />
       </Section>
 
       {/* VÒNG LOẠI TRỰC TIẾP */}

@@ -233,21 +233,18 @@ export type StandingRow = {
 
 export function getStandings(
   kind: "doubles" | "teams",
-  groupId: string
+  groupId: string,
+  entries: string[],
 ): StandingRow[] {
   const isDoubles = kind === "doubles";
-  const group = (isDoubles ? MOCK_DOUBLES_GROUPS : MOCK_TEAM_GROUPS).find(
-    (g) => g.id === groupId
-  );
-  if (!group) return [];
   const matches = isDoubles
     ? MOCK_DOUBLES_MATCHES.filter((m) => m.groupId === groupId)
     : MOCK_TEAM_MATCHES.filter((m) => m.groupId === groupId);
   const rows = new Map<string, StandingRow>(
-    group.entries.map((e) => [
+    entries.map((e) => [
       e,
       { entry: e, played: 0, won: 0, lost: 0, diff: 0, points: 0 },
-    ])
+    ]),
   );
   for (const m of matches) {
     if (m.status !== "done") continue;

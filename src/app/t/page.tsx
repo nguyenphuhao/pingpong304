@@ -1,5 +1,9 @@
 import { ContentHome } from "../_ContentHome";
+import { fetchTeamGroups } from "@/lib/db/groups";
 
-export default function TeamsPublicPage() {
-  return <ContentHome kind="teams" />;
+export const dynamic = "force-dynamic";
+
+export default async function TeamsPublicPage() {
+  const groups = await fetchTeamGroups();
+  return <ContentHome kind="teams" groups={groups} />;
 }

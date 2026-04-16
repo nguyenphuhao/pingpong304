@@ -1,7 +1,10 @@
 import { notFound } from "next/navigation";
 import { PublicHeader } from "../../_public";
 import { DoublesSchedule } from "../../admin/_components";
-import { MOCK_DOUBLES_GROUPS, MOCK_DOUBLES_MATCHES } from "../../admin/_mock";
+import { MOCK_DOUBLES_MATCHES } from "../../admin/_mock";
+import { fetchDoublesGroupById } from "@/lib/db/groups";
+
+export const dynamic = "force-dynamic";
 
 export default async function PublicDoublesGroupPage({
   params,
@@ -9,7 +12,7 @@ export default async function PublicDoublesGroupPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const group = MOCK_DOUBLES_GROUPS.find((g) => g.id === id);
+  const group = await fetchDoublesGroupById(id);
   if (!group) notFound();
   const matches = MOCK_DOUBLES_MATCHES.filter((m) => m.groupId === id);
 
@@ -19,7 +22,7 @@ export default async function PublicDoublesGroupPage({
       <DoublesSchedule
         groupId={group.id}
         groupName={group.name}
-        entries={group.entries}
+        entries={group.entries.map((e) => e.label)}
         matches={matches}
         readOnly
       />
