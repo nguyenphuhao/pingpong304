@@ -1,29 +1,38 @@
 import { z } from "zod";
 import { err, ok } from "@/lib/api/response";
 import { requireAdmin, UnauthorizedError } from "@/lib/auth";
+import { IdSchema } from "@/lib/schemas/id";
 import { PlayerPatchSchema } from "@/lib/schemas/player";
 import { supabaseServer } from "@/lib/supabase/server";
 
 type Ctx = { params: Promise<{ id: string }> };
 
 export async function GET(_req: Request, ctx: Ctx) {
-  const { id } = await ctx.params;
-  const { data, error } = await supabaseServer
-    .from("doubles_players")
-    .select("id, name, phone, gender, club")
-    .eq("id", id)
-    .single();
-  if (error) {
-    if ((error as { code?: string }).code === "PGRST116") return err("Not found", 404);
-    return err(error.message);
+  try {
+    const { id } = await ctx.params;
+    IdSchema.parse(id);
+    const { data, error } = await supabaseServer
+      .from("doubles_players")
+      .select("id, name, phone, gender, club")
+      .eq("id", id)
+      .single();
+    if (error) {
+      if ((error as { code?: string }).code === "PGRST116") return err("Not found", 404);
+      return err(error.message);
+    }
+    return ok(data);
+  } catch (e) {
+    if (e instanceof z.ZodError) return err("ID không hợp lệ", 400);
+    const msg = e instanceof Error ? e.message : "Internal error";
+    return err(msg, 500);
   }
-  return ok(data);
 }
 
 export async function PATCH(req: Request, ctx: Ctx) {
   try {
     await requireAdmin();
     const { id } = await ctx.params;
+    IdSchema.parse(id);
     const body = await req.json();
     const parsed = PlayerPatchSchema.parse(body);
 
@@ -62,6 +71,7 @@ export async function DELETE(_req: Request, ctx: Ctx) {
   try {
     await requireAdmin();
     const { id } = await ctx.params;
+    IdSchema.parse(id);
 
     // Pre-check: any pair references this player?
     const { data: pairs, error: checkErr } = await supabaseServer
@@ -83,6 +93,7 @@ export async function DELETE(_req: Request, ctx: Ctx) {
     return ok(null);
   } catch (e) {
     if (e instanceof UnauthorizedError) return err("Unauthorized", 401);
+    if (e instanceof z.ZodError) return err("ID không hợp lệ", 400);
     const msg = e instanceof Error ? e.message : "Internal error";
     return err(msg, 500);
   }

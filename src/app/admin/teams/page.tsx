@@ -2,13 +2,9 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ContentWorkspace } from "../_components";
-import {
-  MOCK_TEAM_GROUPS,
-  MOCK_TEAM_KO,
-  MOCK_TEAMS,
-  TEAM_FINAL_NOTE,
-} from "../_mock";
+import { MOCK_TEAM_GROUPS, MOCK_TEAM_KO, TEAM_FINAL_NOTE } from "../_mock";
 import { supabaseServer } from "@/lib/supabase/server";
+import { fetchTeams } from "@/lib/db/teams";
 import type { Player } from "../_mock";
 
 export const dynamic = "force-dynamic";
@@ -29,7 +25,7 @@ async function fetchPlayers(): Promise<Player[]> {
 }
 
 export default async function TeamsAdminPage() {
-  const players = await fetchPlayers();
+  const [players, teams] = await Promise.all([fetchPlayers(), fetchTeams()]);
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col gap-5 p-4">
@@ -52,7 +48,7 @@ export default async function TeamsAdminPage() {
       <ContentWorkspace
         kind="teams"
         players={players}
-        teams={MOCK_TEAMS}
+        teams={teams}
         groups={MOCK_TEAM_GROUPS}
         knockout={MOCK_TEAM_KO}
         knockoutNote={TEAM_FINAL_NOTE}

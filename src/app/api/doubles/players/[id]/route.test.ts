@@ -165,3 +165,16 @@ describe("DELETE /api/doubles/players/[id]", () => {
     expect(body).toEqual({ data: null, error: null });
   });
 });
+
+describe("DELETE /api/doubles/players/[id] — id guard", () => {
+  test("returns 400 on invalid id format", async () => {
+    vi.mocked(cookies).mockResolvedValue({
+      get: () => ({ value: "ok", name: "pp_admin" }),
+    } as unknown as Awaited<ReturnType<typeof cookies>>);
+    const res = await DELETE(
+      new Request("http://localhost", { method: "DELETE" }),
+      { params: Promise.resolve({ id: "a;b" }) },
+    );
+    expect(res.status).toBe(400);
+  });
+});

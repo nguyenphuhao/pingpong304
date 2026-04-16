@@ -12,7 +12,6 @@ import {
   Plus,
   Trash2,
   Trophy,
-  Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -38,7 +37,6 @@ import type {
   KnockoutMatch,
   MatchStatus,
   OppSlot,
-  Pair,
   Player,
   SetScore,
   Team,
@@ -46,8 +44,12 @@ import type {
   TeamSlot,
 } from "./_mock";
 import { MOCK_TEAMS, ROUND_LABEL, TEAM_MATCH_TEMPLATE } from "./_mock";
-import { groupColor, teamColor } from "../_groupColors";
+import type { PairWithNames } from "@/lib/schemas/pair";
+import type { TeamWithNames } from "@/lib/schemas/team";
+import { groupColor } from "../_groupColors";
 import { PlayersSection } from "./_players-section";
+import { PairsSection } from "./_pairs-section";
+import { TeamsSection } from "./_teams-section";
 
 export function ContentWorkspace({
   kind,
@@ -60,8 +62,8 @@ export function ContentWorkspace({
 }: {
   kind: Content;
   players: Player[];
-  pairs?: Pair[];
-  teams?: Team[];
+  pairs?: PairWithNames[];
+  teams?: TeamWithNames[];
   groups: Group[];
   knockout: KnockoutMatch[];
   knockoutNote?: string;
@@ -80,7 +82,11 @@ export function ContentWorkspace({
         <PlayersSection kind={kind} players={players} />
       </TabsContent>
       <TabsContent value="entries" className="mt-4">
-        {isDoubles ? <PairsSection pairs={pairs ?? []} /> : <TeamsSection teams={teams ?? []} />}
+        {isDoubles ? (
+          <PairsSection pairs={pairs ?? []} players={players} />
+        ) : (
+          <TeamsSection teams={teams ?? []} players={players} />
+        )}
       </TabsContent>
       <TabsContent value="groups" className="mt-4">
         <GroupsSection kind={kind} groups={groups} />
@@ -116,63 +122,7 @@ export function SectionHeader({
 
 /* PlayersSection and PlayerFormDialog extracted to ./_players-section.tsx */
 
-/* ---------- Cặp ---------- */
-
-function PairsSection({ pairs }: { pairs: Pair[] }) {
-  return (
-    <div>
-      <SectionHeader title="Danh sách cặp đôi" subtitle={`${pairs.length} cặp đã ghép`} />
-      <div className="flex flex-col gap-2">
-        {pairs.map((pair, i) => (
-          <Card key={pair.id} className="flex flex-row items-center gap-3 p-3">
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-medium text-muted-foreground">
-              {i + 1}
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="truncate text-sm font-medium">
-                {pair.p1} <span className="text-muted-foreground">/</span> {pair.p2}
-              </div>
-              <div className="text-sm text-muted-foreground">Mã cặp · {pair.id.toUpperCase()}</div>
-            </div>
-          </Card>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-/* ---------- Đội ---------- */
-
-function TeamsSection({ teams }: { teams: Team[] }) {
-  return (
-    <div>
-      <SectionHeader title="Danh sách đội" subtitle={`${teams.length} đội đã đăng ký`} />
-      <div className="flex flex-col gap-3">
-        {teams.map((team, i) => {
-          const c = teamColor(i);
-          return (
-            <Card key={team.id} className={`p-4 ${c.border} ${c.bg}`}>
-              <div className="mb-2 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className={`flex size-7 items-center justify-center rounded-md ${c.badge}`}>
-                    <Users className="size-3.5" />
-                  </span>
-                  <span className="font-medium">{team.name}</span>
-                </div>
-                <Badge variant="secondary">{team.members.length} VĐV</Badge>
-              </div>
-              <ul className="space-y-1 text-sm text-muted-foreground">
-                {team.members.map((m) => (
-                  <li key={m}>• {m}</li>
-                ))}
-              </ul>
-            </Card>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
+/* ---------- Cặp + Đội: extracted to _pairs-section.tsx / _teams-section.tsx ---------- */
 
 /* ---------- Bảng đấu ---------- */
 

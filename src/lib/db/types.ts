@@ -1,6 +1,6 @@
 // Single source of truth for DB entity types.
-// Currently re-exported from the mock file (which will be deleted in Phase 7).
-// All future API and UI code should import types from here, not from _mock.
+// Legacy types (Content, Player, Pair, Team, Group, etc.) re-export from _mock
+// (will be deleted in Phase 7). New DB-shape types live in src/lib/schemas/.
 export type {
   Content,
   Player,
@@ -18,3 +18,6 @@ export type {
   KnockoutMatch,
   TeamMatch,
 } from "@/app/admin/_mock";
+
+export type { PairWithNames } from "@/lib/schemas/pair";
+export type { TeamWithNames } from "@/lib/schemas/team";

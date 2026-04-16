@@ -13,11 +13,24 @@ export default function Loading() {
       </div>
       <div className="flex flex-col gap-2">
         {Array.from({ length: 5 }).map((_, i) => (
-          <Card key={i} className="flex flex-row items-center gap-3 p-3">
+          <Card key={`player-${i}`} className="flex flex-row items-center gap-3 p-3">
             <Skeleton className="size-9 rounded-full" />
             <div className="flex-1 space-y-1.5">
               <Skeleton className="h-4 w-32" />
               <Skeleton className="h-3.5 w-24" />
+            </div>
+            <Skeleton className="size-8 rounded-md" />
+            <Skeleton className="size-8 rounded-md" />
+          </Card>
+        ))}
+      </div>
+      <div className="flex flex-col gap-2">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Card key={`pair-${i}`} className="flex flex-row items-center gap-3 p-3">
+            <Skeleton className="size-9 rounded-full" />
+            <div className="flex-1 space-y-1.5">
+              <Skeleton className="h-4 w-40" />
+              <Skeleton className="h-3.5 w-20" />
             </div>
             <Skeleton className="size-8 rounded-md" />
             <Skeleton className="size-8 rounded-md" />
