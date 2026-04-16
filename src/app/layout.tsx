@@ -32,7 +32,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col antialiased">
         {children}
         <BottomNav />
-        <Toaster />
+        <Toaster position="top-center" richColors />
       </body>
     </html>
   );

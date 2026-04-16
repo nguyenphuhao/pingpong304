@@ -5,11 +5,31 @@ import { ContentWorkspace } from "../_components";
 import {
   MOCK_DOUBLES_GROUPS,
   MOCK_DOUBLES_KO,
-  MOCK_DOUBLES_PLAYERS,
   MOCK_PAIRS,
 } from "../_mock";
+import { supabaseServer } from "@/lib/supabase/server";
+import type { Player } from "../_mock";
 
-export default function DoublesAdminPage() {
+export const dynamic = "force-dynamic";
+
+async function fetchPlayers(): Promise<Player[]> {
+  const { data, error } = await supabaseServer
+    .from("doubles_players")
+    .select("id, name, phone, gender, club")
+    .order("id");
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((r) => ({
+    id: r.id,
+    name: r.name,
+    phone: r.phone ?? "",
+    gender: r.gender,
+    club: r.club ?? "",
+  }));
+}
+
+export default async function DoublesAdminPage() {
+  const players = await fetchPlayers();
+
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col gap-5 p-4">
       <header className="flex items-center gap-2">
@@ -30,7 +50,7 @@ export default function DoublesAdminPage() {
 
       <ContentWorkspace
         kind="doubles"
-        players={MOCK_DOUBLES_PLAYERS}
+        players={players}
         pairs={MOCK_PAIRS}
         groups={MOCK_DOUBLES_GROUPS}
         knockout={MOCK_DOUBLES_KO}

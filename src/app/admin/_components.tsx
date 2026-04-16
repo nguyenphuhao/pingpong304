@@ -1,19 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import {
   CheckCircle2,
   ChevronRight,
+  Loader2,
   Lock,
   LockOpen,
-  Mars,
   Pencil,
   Plus,
   Trash2,
   Trophy,
   Users,
-  Venus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -48,6 +47,7 @@ import type {
 } from "./_mock";
 import { MOCK_TEAMS, ROUND_LABEL, TEAM_MATCH_TEMPLATE } from "./_mock";
 import { groupColor, teamColor } from "../_groupColors";
+import { PlayersSection } from "./_players-section";
 
 export function ContentWorkspace({
   kind,
@@ -92,7 +92,7 @@ export function ContentWorkspace({
   );
 }
 
-function SectionHeader({
+export function SectionHeader({
   title,
   subtitle,
   action,
@@ -114,98 +114,7 @@ function SectionHeader({
 
 /* ---------- VĐV ---------- */
 
-function PlayersSection({ kind, players }: { kind: Content; players: Player[] }) {
-  const total = players.length;
-  const male = useMemo(() => players.filter((p) => p.gender === "M").length, [players]);
-  const female = total - male;
-
-  return (
-    <div>
-      <SectionHeader
-        title="Danh sách VĐV"
-        subtitle={`${total} VĐV · ${male} nam · ${female} nữ`}
-        action={<PlayerFormDialog mode="create" />}
-      />
-      <div className="flex flex-col gap-2">
-        {players.map((p, i) => (
-          <Card key={p.id} className="flex flex-row items-center gap-3 p-3">
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-medium text-muted-foreground">
-              {i + 1}
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1.5">
-                <span className="truncate font-medium">{p.name}</span>
-                {p.gender === "M" ? (
-                  <Mars className="size-4 shrink-0 text-blue-500" aria-label="Nam" />
-                ) : (
-                  <Venus className="size-4 shrink-0 text-pink-500" aria-label="Nữ" />
-                )}
-              </div>
-              <div className="truncate text-sm text-muted-foreground">{p.club}</div>
-            </div>
-            <div className="flex shrink-0 gap-0.5">
-              <PlayerFormDialog mode="edit" player={p} />
-              <ConfirmDeleteButton label={`VĐV "${p.name}"`} />
-            </div>
-          </Card>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function PlayerFormDialog({ mode, player }: { mode: "create" | "edit"; player?: Player }) {
-  return (
-    <Dialog>
-      <DialogTrigger
-        render={
-          mode === "create" ? (
-            <Button size="sm">
-              <Plus /> Thêm
-            </Button>
-          ) : (
-            <Button size="icon-sm" variant="ghost" aria-label="Sửa" className="bg-muted hover:bg-muted/70" />
-          )
-        }
-      >
-        {mode === "edit" ? <Pencil /> : null}
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{mode === "create" ? "Thêm VĐV" : "Sửa VĐV"}</DialogTitle>
-          <DialogDescription>
-            {mode === "create" ? "Nhập thông tin VĐV mới." : "Cập nhật thông tin VĐV."}
-          </DialogDescription>
-        </DialogHeader>
-        <div className="grid gap-3">
-          <div className="grid gap-1.5">
-            <Label htmlFor="name">Họ tên</Label>
-            <Input id="name" defaultValue={player?.name} placeholder="Nguyễn Văn A" />
-          </div>
-          <div className="grid gap-1.5">
-            <Label htmlFor="gender">Giới tính</Label>
-            <select
-              id="gender"
-              defaultValue={player?.gender ?? "M"}
-              className="h-9 rounded-md border border-input bg-transparent px-3 text-sm shadow-xs"
-            >
-              <option value="M">Nam</option>
-              <option value="F">Nữ</option>
-            </select>
-          </div>
-          <div className="grid gap-1.5">
-            <Label htmlFor="club">CLB / Đơn vị</Label>
-            <Input id="club" defaultValue={player?.club} placeholder="CLB ..." />
-          </div>
-        </div>
-        <DialogFooter>
-          <DialogClose render={<Button variant="outline" type="button" />}>Huỷ</DialogClose>
-          <Button type="button">{mode === "create" ? "Thêm" : "Lưu"}</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
+/* PlayersSection and PlayerFormDialog extracted to ./_players-section.tsx */
 
 /* ---------- Cặp ---------- */
 
@@ -1377,22 +1286,64 @@ function KnockoutMatchCard({
 
 /* ---------- Shared ---------- */
 
-function ConfirmDeleteButton({ label }: { label: string }) {
+export function ConfirmDeleteButton({
+  label,
+  onConfirm,
+  disabled,
+}: {
+  label: string;
+  onConfirm?: () => Promise<void> | void;
+  disabled?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const [pending, setPending] = useState(false);
   return (
-    <Dialog>
-      <DialogTrigger render={<Button size="icon-sm" variant="ghost" aria-label="Xoá" className="bg-destructive/10 hover:bg-destructive/20" />}>
-        <Trash2 className="text-destructive" />
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger
+        render={
+          <Button
+            size="icon-sm"
+            variant="ghost"
+            aria-label="Xoá"
+            className="bg-muted hover:bg-muted/70 text-destructive"
+            disabled={disabled}
+          />
+        }
+      >
+        <Trash2 />
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Xác nhận xoá</DialogTitle>
-          <DialogDescription>
-            Bạn chắc chắn muốn xoá {label}? Thao tác này không thể hoàn tác.
-          </DialogDescription>
+          <DialogTitle>Xoá {label}?</DialogTitle>
+          <DialogDescription>Hành động này không thể hoàn tác.</DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <DialogClose render={<Button variant="outline" type="button" />}>Huỷ</DialogClose>
-          <Button variant="destructive" type="button">Xoá</Button>
+          <DialogClose render={<Button variant="outline" type="button" disabled={pending} />}>
+            Huỷ
+          </DialogClose>
+          <Button
+            type="button"
+            variant="destructive"
+            disabled={pending}
+            onClick={async () => {
+              if (!onConfirm) {
+                setOpen(false);
+                return;
+              }
+              setPending(true);
+              try {
+                await onConfirm();
+                setOpen(false);
+              } catch {
+                /* toasted by handler */
+              } finally {
+                setPending(false);
+              }
+            }}
+          >
+            {pending && <Loader2 className="size-4 animate-spin" />}
+            Xoá
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

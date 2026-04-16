@@ -5,12 +5,32 @@ import { ContentWorkspace } from "../_components";
 import {
   MOCK_TEAM_GROUPS,
   MOCK_TEAM_KO,
-  MOCK_TEAM_PLAYERS,
   MOCK_TEAMS,
   TEAM_FINAL_NOTE,
 } from "../_mock";
+import { supabaseServer } from "@/lib/supabase/server";
+import type { Player } from "../_mock";
 
-export default function TeamsAdminPage() {
+export const dynamic = "force-dynamic";
+
+async function fetchPlayers(): Promise<Player[]> {
+  const { data, error } = await supabaseServer
+    .from("team_players")
+    .select("id, name, phone, gender, club")
+    .order("id");
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((r) => ({
+    id: r.id,
+    name: r.name,
+    phone: r.phone ?? "",
+    gender: r.gender,
+    club: r.club ?? "",
+  }));
+}
+
+export default async function TeamsAdminPage() {
+  const players = await fetchPlayers();
+
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col gap-5 p-4">
       <header className="flex items-center gap-2">
@@ -31,7 +51,7 @@ export default function TeamsAdminPage() {
 
       <ContentWorkspace
         kind="teams"
-        players={MOCK_TEAM_PLAYERS}
+        players={players}
         teams={MOCK_TEAMS}
         groups={MOCK_TEAM_GROUPS}
         knockout={MOCK_TEAM_KO}

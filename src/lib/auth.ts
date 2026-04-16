@@ -27,3 +27,14 @@ export async function destroySession() {
   const store = await cookies();
   store.delete(SESSION_COOKIE);
 }
+
+export class UnauthorizedError extends Error {
+  constructor() {
+    super("Unauthorized");
+    this.name = "UnauthorizedError";
+  }
+}
+
+export async function requireAdmin(): Promise<void> {
+  if (!(await isAdmin())) throw new UnauthorizedError();
+}
