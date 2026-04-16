@@ -28,25 +28,26 @@ export default async function TeamsAdminPage() {
   const [players, teams] = await Promise.all([fetchPlayers(), fetchTeams()]);
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col gap-5 p-4">
-      <header className="flex items-center gap-2">
-        <Button
-          nativeButton={false}
-          render={<Link href="/admin" />}
-          variant="ghost"
-          size="icon-sm"
-          aria-label="Quay lại"
-        >
-          <ArrowLeft />
-        </Button>
-        <div>
-          <h1 className="text-xl font-semibold">Nội dung Đồng đội</h1>
-          <p className="text-sm text-muted-foreground">VĐV, đội và bảng đấu</p>
-        </div>
-      </header>
-
+    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-4 pb-8">
       <ContentWorkspace
         kind="teams"
+        headerSlot={
+          <header className="flex items-center gap-2">
+            <Button
+              nativeButton={false}
+              render={<Link href="/admin" />}
+              variant="ghost"
+              size="icon-sm"
+              aria-label="Quay lại"
+            >
+              <ArrowLeft />
+            </Button>
+            <div>
+              <h1 className="text-xl font-semibold">Nội dung Đồng đội</h1>
+              <p className="text-sm text-muted-foreground">VĐV, đội và bảng đấu</p>
+            </div>
+          </header>
+        }
         players={players}
         teams={teams}
         groups={MOCK_TEAM_GROUPS}

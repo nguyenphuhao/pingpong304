@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import {
   CheckCircle2,
@@ -51,8 +52,17 @@ import { PlayersSection } from "./_players-section";
 import { PairsSection } from "./_pairs-section";
 import { TeamsSection } from "./_teams-section";
 
+const DEFAULT_TAB = "players";
+const TAB_VALUES = ["players", "entries", "groups", "ko"] as const;
+type TabValue = (typeof TAB_VALUES)[number];
+
+function isTabValue(v: string | null): v is TabValue {
+  return v !== null && (TAB_VALUES as readonly string[]).includes(v);
+}
+
 export function ContentWorkspace({
   kind,
+  headerSlot,
   players,
   pairs,
   teams,
@@ -61,6 +71,7 @@ export function ContentWorkspace({
   knockoutNote,
 }: {
   kind: Content;
+  headerSlot?: React.ReactNode;
   players: Player[];
   pairs?: PairWithNames[];
   teams?: TeamWithNames[];
@@ -69,14 +80,32 @@ export function ContentWorkspace({
   knockoutNote?: string;
 }) {
   const isDoubles = kind === "doubles";
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const raw = searchParams.get("tab");
+  const tab: TabValue = isTabValue(raw) ? raw : DEFAULT_TAB;
+
+  const handleTabChange = (value: unknown) => {
+    if (typeof value !== "string" || !isTabValue(value)) return;
+    const params = new URLSearchParams(searchParams);
+    if (value === DEFAULT_TAB) params.delete("tab");
+    else params.set("tab", value);
+    const qs = params.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  };
+
   return (
-    <Tabs defaultValue="players">
-      <TabsList className="w-full">
-        <TabsTrigger value="players">VĐV</TabsTrigger>
-        <TabsTrigger value="entries">{isDoubles ? "Cặp" : "Đội"}</TabsTrigger>
-        <TabsTrigger value="groups">Bảng</TabsTrigger>
-        <TabsTrigger value="ko">Knockout</TabsTrigger>
-      </TabsList>
+    <Tabs value={tab} onValueChange={handleTabChange}>
+      <div className="sticky top-0 z-20 -mx-4 flex flex-col gap-3 bg-background px-4 pt-4 pb-3">
+        {headerSlot}
+        <TabsList className="w-full">
+          <TabsTrigger value="players">VĐV</TabsTrigger>
+          <TabsTrigger value="entries">{isDoubles ? "Cặp" : "Đội"}</TabsTrigger>
+          <TabsTrigger value="groups">Bảng</TabsTrigger>
+          <TabsTrigger value="ko">Knockout</TabsTrigger>
+        </TabsList>
+      </div>
 
       <TabsContent value="players" className="mt-4">
         <PlayersSection kind={kind} players={players} />

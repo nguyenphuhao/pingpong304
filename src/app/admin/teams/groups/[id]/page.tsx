@@ -18,10 +18,10 @@ export default async function TeamGroupDetailPage({
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col gap-5 p-4">
-      <header className="flex items-center gap-2">
+      <header className="sticky top-0 z-20 -mx-4 -mt-4 flex items-center gap-2 bg-background px-4 pb-3 pt-4">
         <Button
           nativeButton={false}
-          render={<Link href="/admin/teams" />}
+          render={<Link href="/admin/teams?tab=groups" />}
           variant="ghost"
           size="icon-sm"
           aria-label="Quay lại"

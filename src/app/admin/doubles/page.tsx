@@ -28,25 +28,26 @@ export default async function DoublesAdminPage() {
   const [players, pairs] = await Promise.all([fetchPlayers(), fetchPairs()]);
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col gap-5 p-4">
-      <header className="flex items-center gap-2">
-        <Button
-          nativeButton={false}
-          render={<Link href="/admin" />}
-          variant="ghost"
-          size="icon-sm"
-          aria-label="Quay lại"
-        >
-          <ArrowLeft />
-        </Button>
-        <div>
-          <h1 className="text-xl font-semibold">Nội dung Đôi</h1>
-          <p className="text-sm text-muted-foreground">VĐV, cặp đôi và bảng đấu</p>
-        </div>
-      </header>
-
+    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-4 pb-8">
       <ContentWorkspace
         kind="doubles"
+        headerSlot={
+          <header className="flex items-center gap-2">
+            <Button
+              nativeButton={false}
+              render={<Link href="/admin" />}
+              variant="ghost"
+              size="icon-sm"
+              aria-label="Quay lại"
+            >
+              <ArrowLeft />
+            </Button>
+            <div>
+              <h1 className="text-xl font-semibold">Nội dung Đôi</h1>
+              <p className="text-sm text-muted-foreground">VĐV, cặp đôi và bảng đấu</p>
+            </div>
+          </header>
+        }
         players={players}
         pairs={pairs}
         groups={MOCK_DOUBLES_GROUPS}
