@@ -155,7 +155,9 @@ const doublesKoBracket: Record<string, { next_match_id: string | null; next_slot
   "dko-f":   { next_match_id: null, next_slot: null },
 };
 
-for (const m of MOCK_DOUBLES_KO) {
+// Insert in reverse order (f → sf → qf) so FK next_match_id references exist
+const doublesKoReversed = [...MOCK_DOUBLES_KO].reverse();
+for (const m of doublesKoReversed) {
   const bracket = doublesKoBracket[m.id] ?? { next_match_id: null, next_slot: null };
   lines.push(
     `INSERT INTO doubles_ko (id, round, best_of, label_a, label_b, entry_a, entry_b, sets, status, winner, sets_a, sets_b, next_match_id, next_slot) VALUES (${str(m.id)}, ${str(m.round)}, ${num(m.bestOf)}, ${str(m.labelA)}, ${str(m.labelB)}, null, null, ${jsonb(m.sets)}, ${str(m.status)}, null, 0, 0, ${str(bracket.next_match_id)}, ${str(bracket.next_slot)}) ON CONFLICT (id) DO NOTHING;`
@@ -222,7 +224,9 @@ const teamKoBracket: Record<string, { next_match_id: string | null; next_slot: s
   "tko-f":   { next_match_id: null, next_slot: null },
 };
 
-for (const m of MOCK_TEAM_KO) {
+// Insert in reverse order (f → sf) so FK next_match_id references exist
+const teamKoReversed = [...MOCK_TEAM_KO].reverse();
+for (const m of teamKoReversed) {
   const bracket = teamKoBracket[m.id] ?? { next_match_id: null, next_slot: null };
   lines.push(
     `INSERT INTO team_ko (id, round, label_a, label_b, entry_a, entry_b, status, score_a, score_b, winner, individual, lineup, next_match_id, next_slot) VALUES (${str(m.id)}, ${str(m.round)}, ${str(m.labelA)}, ${str(m.labelB)}, null, null, ${str(m.status)}, 0, 0, null, ${jsonb(m.individual ?? [])}, null, ${str(bracket.next_match_id)}, ${str(bracket.next_slot)}) ON CONFLICT (id) DO NOTHING;`
