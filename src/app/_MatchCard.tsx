@@ -66,15 +66,15 @@ export function MatchCard({
       <div className="flex items-center gap-3">
         <div className="min-w-0 flex-1 space-y-0.5 text-base">
           <div className={`truncate ${aWon ? "font-semibold" : ""}`}>{sideA}</div>
-          <div className={`truncate ${bWon ? "font-semibold" : "text-muted-foreground"}`}>
+          <div className={`truncate ${bWon ? "font-semibold" : isLive ? "text-green-200/60" : "text-muted-foreground"}`}>
             {sideB}
           </div>
         </div>
         <div className="flex shrink-0 flex-col items-end text-xl font-bold tabular-nums leading-tight">
-          <span className={aWon ? (isLive ? "text-green-400" : "") : "text-muted-foreground"}>
+          <span className={aWon ? (isLive ? "text-green-400" : "") : isLive ? "text-green-200/60" : "text-muted-foreground"}>
             {scoreA}
           </span>
-          <span className={bWon ? (isLive ? "text-green-400" : "") : "text-muted-foreground"}>
+          <span className={bWon ? (isLive ? "text-green-400" : "") : isLive ? "text-green-200/60" : "text-muted-foreground"}>
             {scoreB}
           </span>
         </div>
