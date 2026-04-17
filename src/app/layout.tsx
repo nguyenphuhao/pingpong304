@@ -11,8 +11,25 @@ const fontSans = Be_Vietnam_Pro({
 });
 
 export const metadata: Metadata = {
-  title: "CLB Bóng Bàn Bình Tân",
-  description: "Giải bóng bàn nội bộ",
+  title: "CLB Bóng Bàn Bình Tân — Giải Kỷ niệm 51 năm Thống nhất",
+  description:
+    "Giải bóng bàn chào mừng kỷ niệm 51 năm ngày thống nhất đất nước (30/4/1975 – 30/4/2026). Nội dung Đồng đội & Đôi. Xem lịch thi đấu, BXH, kết quả trực tiếp.",
+  metadataBase: new URL("https://bbbt.playnika.com"),
+  openGraph: {
+    title: "CLB Bóng Bàn Bình Tân — Giải 51 năm Thống nhất",
+    description:
+      "Giải bóng bàn chào mừng 51 năm ngày thống nhất đất nước. Lịch thi đấu, BXH, kết quả trực tiếp.",
+    url: "https://bbbt.playnika.com",
+    siteName: "CLB Bóng Bàn Bình Tân",
+    locale: "vi_VN",
+    type: "website",
+  },
+  twitter: {
+    card: "summary",
+    title: "CLB Bóng Bàn Bình Tân — Giải 51 năm Thống nhất",
+    description:
+      "Xem lịch thi đấu, BXH, kết quả trực tiếp giải bóng bàn kỷ niệm 51 năm thống nhất.",
+  },
 };
 
 export const viewport: Viewport = {
