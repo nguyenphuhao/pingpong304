@@ -217,7 +217,7 @@ function StandingsDialog({
         <DialogHeader>
           <DialogTitle>Bảng xếp hạng · {group.name}</DialogTitle>
           <DialogDescription>
-            Thắng: 2 điểm · HS: {diffLabel.toLowerCase()}
+            Thắng: 1 điểm · HS: {diffLabel.toLowerCase()}
           </DialogDescription>
         </DialogHeader>
         <ol className="flex flex-col gap-2">

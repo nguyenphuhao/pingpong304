@@ -275,7 +275,7 @@ function StandingsCard({
             </p>
           </div>
         </div>
-        <div className="text-xs text-muted-foreground">Thắng: 2 điểm</div>
+        <div className="text-xs text-muted-foreground">Thắng: 1 điểm</div>
       </div>
 
       <ol className="flex flex-col gap-2">

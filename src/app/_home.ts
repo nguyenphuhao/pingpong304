@@ -142,8 +142,8 @@ function leaderOf(group: Group, kind: "doubles" | "teams"): GroupLeader {
     if (!sa || !sb) continue;
     sa.diff += a - b;
     sb.diff += b - a;
-    if (a > b) sa.points += 2;
-    else if (b > a) sb.points += 2;
+    if (a > b) sa.points += 1;
+    else if (b > a) sb.points += 1;
   }
   const sorted = [...score.entries()].sort(
     (x, y) => y[1].points - x[1].points || y[1].diff - x[1].diff
@@ -191,8 +191,8 @@ function topNOf(group: Group, kind: "doubles" | "teams", n: number): GroupTops {
     if (!sa || !sb) continue;
     sa.diff += a - b;
     sb.diff += b - a;
-    if (a > b) sa.points += 2;
-    else if (b > a) sb.points += 2;
+    if (a > b) sa.points += 1;
+    else if (b > a) sb.points += 1;
   }
   const sorted = [...score.entries()].sort(
     (x, y) => y[1].points - x[1].points || y[1].diff - x[1].diff
@@ -262,11 +262,11 @@ export function getStandings(
     if (a > b) {
       ra.won += 1;
       rb.lost += 1;
-      ra.points += 2;
+      ra.points += 1;
     } else if (b > a) {
       rb.won += 1;
       ra.lost += 1;
-      rb.points += 2;
+      rb.points += 1;
     }
   }
   return [...rows.values()].sort(

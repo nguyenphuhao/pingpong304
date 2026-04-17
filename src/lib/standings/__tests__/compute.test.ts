@@ -65,7 +65,7 @@ describe("computeDoublesStandings", () => {
     const standings = computeDoublesStandings(entries, matches);
     expect(standings[0].entryId).toBe("A");
     expect(standings[0].won).toBe(2);
-    expect(standings[0].points).toBe(4);
+    expect(standings[0].points).toBe(2);
     expect(standings[0].rank).toBe(1);
     expect(standings[1].entryId).toBe("B");
     expect(standings[1].rank).toBe(2);

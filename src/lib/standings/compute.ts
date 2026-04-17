@@ -42,11 +42,11 @@ export function computeDoublesStandings(
     if (m.winner?.id === m.pairA.id) {
       ra.won += 1;
       rb.lost += 1;
-      ra.points += 2;
+      ra.points += 1;
     } else if (m.winner?.id === m.pairB.id) {
       rb.won += 1;
       ra.lost += 1;
-      rb.points += 2;
+      rb.points += 1;
     }
   }
 
@@ -93,11 +93,11 @@ export function computeTeamStandings(
     if (m.winner?.id === m.teamA.id) {
       ra.won += 1;
       rb.lost += 1;
-      ra.points += 2;
+      ra.points += 1;
     } else if (m.winner?.id === m.teamB.id) {
       rb.won += 1;
       ra.lost += 1;
-      rb.points += 2;
+      rb.points += 1;
     }
   }
 

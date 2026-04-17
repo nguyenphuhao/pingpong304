@@ -19,7 +19,7 @@ function mkRow(
     diff: setsWon - setsLost,
     setsWon,
     setsLost,
-    points: won * 2,
+    points: won,
     rank: 0,
   };
 }
