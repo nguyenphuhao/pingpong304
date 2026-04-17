@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { Trophy } from "lucide-react";
 import { SwipeCarousel } from "./_SwipeCarousel";
 import { groupColor } from "./_groupColors";
@@ -16,8 +15,6 @@ export function StandingsSummary({
   groups: GroupResolved[];
   standings: Map<string, StandingRow[]>;
 }) {
-  const prefix = kind === "doubles" ? "/d" : "/t";
-
   return (
     <section>
       <div className="mb-2 flex items-center gap-2">
@@ -78,13 +75,6 @@ export function StandingsSummary({
           );
         })}
       </SwipeCarousel>
-
-      <Link
-        href={prefix}
-        className="mt-1.5 block text-center text-xs text-blue-500"
-      >
-        Xem chi tiết từng bảng →
-      </Link>
     </section>
   );
 }
