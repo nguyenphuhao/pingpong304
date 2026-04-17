@@ -58,7 +58,19 @@
   --spacing: 0.25rem;
 }
 
-html {
+html[data-font-size="sm"] {
+  font-size: 15px;
+}
+html[data-font-size="base"] {
+  font-size: 17px;
+}
+html[data-font-size="lg"] {
+  font-size: 19px;
+}
+html[data-font-size="xl"] {
+  font-size: 21px;
+}
+html:not([data-font-size]) {
   font-size: 17px;
 }
 
