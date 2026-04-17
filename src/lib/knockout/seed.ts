@@ -92,8 +92,8 @@ export function buildDoublesBracket(seeds: SeedEntry[], groupNames: string[]): D
 
 function teamSubMatches(matchId: string): TeamKoInsert["individual"] {
   return [
-    { id: `${matchId}-sub1`, label: "Đôi", kind: "doubles", playersA: [], playersB: [], bestOf: 3, sets: [] },
-    { id: `${matchId}-sub2`, label: "Đơn 1", kind: "singles", playersA: [], playersB: [], bestOf: 3, sets: [] },
+    { id: `${matchId}-sub1`, label: "Đơn 1", kind: "singles", playersA: [], playersB: [], bestOf: 3, sets: [] },
+    { id: `${matchId}-sub2`, label: "Đôi", kind: "doubles", playersA: [], playersB: [], bestOf: 3, sets: [] },
     { id: `${matchId}-sub3`, label: "Đơn 2", kind: "singles", playersA: [], playersB: [], bestOf: 3, sets: [] },
   ];
 }

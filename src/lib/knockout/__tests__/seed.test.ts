@@ -83,8 +83,8 @@ describe("buildTeamBracket", () => {
   test("each match has 3 individual sub-matches", () => {
     for (const m of buildTeamBracket(seeds, ["A", "B"])) {
       expect(m.individual).toHaveLength(3);
-      expect(m.individual[0]).toMatchObject({ label: "Đôi", kind: "doubles" });
-      expect(m.individual[1]).toMatchObject({ label: "Đơn 1", kind: "singles" });
+      expect(m.individual[0]).toMatchObject({ label: "Đơn 1", kind: "singles" });
+      expect(m.individual[1]).toMatchObject({ label: "Đôi", kind: "doubles" });
       expect(m.individual[2]).toMatchObject({ label: "Đơn 2", kind: "singles" });
     }
   });
