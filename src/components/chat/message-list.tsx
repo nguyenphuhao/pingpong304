@@ -107,9 +107,44 @@ export function MessageList({ messages, isStreaming }: Props) {
   return (
     <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
       {messages.length === 0 ? (
-        <p className="text-center text-sm text-muted-foreground">
-          Hỏi bất kỳ điều gì về giải đấu
-        </p>
+        <div className="text-sm text-muted-foreground space-y-2">
+          <p className="font-medium text-foreground">
+            Tôi có thể trả lời các câu hỏi về giải đấu:
+          </p>
+          <ul className="list-disc pl-5 space-y-1 text-xs">
+            <li>
+              <span className="font-medium text-foreground">Điều lệ</span> —
+              thể thức, luật tiebreaker, cơ cấu bảng & KO
+            </li>
+            <li>
+              <span className="font-medium text-foreground">Thống kê</span> —
+              cặp/đội đã đánh mấy trận, còn bao nhiêu, đối thủ kế tiếp
+            </li>
+            <li>
+              <span className="font-medium text-foreground">Bảng điểm</span> —
+              xếp hạng hiện tại, ai đang dẫn đầu
+            </li>
+            <li>
+              <span className="font-medium text-foreground">Lịch trận</span> —
+              những trận sắp tới trong bảng hoặc của cặp/đội bạn quan tâm
+            </li>
+            <li>
+              <span className="font-medium text-foreground">Xác suất vào vòng trong</span>
+              {" "}— % chính xác + trận nào cần thắng
+            </li>
+            <li>
+              <span className="font-medium text-foreground">So sánh</span> —
+              lịch sử đối đầu giữa 2 cặp/đội, đối thủ chung
+            </li>
+            <li>
+              <span className="font-medium text-foreground">Phong độ</span> —
+              chuỗi thắng/thua gần đây, hiệu số ván trung bình
+            </li>
+          </ul>
+          <p className="text-xs italic">
+            Gõ tên VĐV/đội hoặc chọn một gợi ý bên dưới để bắt đầu.
+          </p>
+        </div>
       ) : null}
       {messages.map((msg) => (
         <div
