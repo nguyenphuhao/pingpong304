@@ -14,6 +14,20 @@ import { fetchDoublesGroups } from "@/lib/db/groups";
 import { fetchDoublesMatchesByGroup } from "@/lib/db/matches";
 import { doublesGroupMidTournament } from "../fixtures/groups";
 
+type EntityStatsResult = {
+  played: number;
+  won: number;
+  lost: number;
+  remaining: number;
+  groupId: string;
+  groupName: string;
+};
+
+type ExecuteFunction = (
+  params: { entityId: string; type: string },
+  context: { toolCallId: string; messages: Array<unknown> },
+) => Promise<EntityStatsResult>;
+
 describe("getEntityStatsTool — pair", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -27,7 +41,7 @@ describe("getEntityStatsTool — pair", () => {
       doublesGroupMidTournament.matches,
     );
 
-    const result = await (getEntityStatsTool.execute as any)(
+    const result = await (getEntityStatsTool.execute as ExecuteFunction)(
       { entityId: "p1", type: "pair" },
       { toolCallId: "t", messages: [] },
     );
@@ -39,7 +53,7 @@ describe("getEntityStatsTool — pair", () => {
   it("throws NOT_FOUND when entity not in any group", async () => {
     (fetchDoublesGroups as ReturnType<typeof vi.fn>).mockResolvedValue([]);
     await expect(
-      (getEntityStatsTool.execute as any)(
+      (getEntityStatsTool.execute as ExecuteFunction)(
         { entityId: "unknown", type: "pair" },
         { toolCallId: "t", messages: [] },
       ),

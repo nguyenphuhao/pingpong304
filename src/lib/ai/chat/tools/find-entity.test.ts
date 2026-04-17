@@ -11,6 +11,10 @@ vi.mock("@/lib/db/teams", () => ({
 import { fetchPairs } from "@/lib/db/pairs";
 import { fetchTeams } from "@/lib/db/teams";
 
+type FindEntityResult = {
+  matches: Array<{ type: string; id: string; label: string; matchedOn: string }>;
+};
+
 describe("findEntityTool", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -24,8 +28,8 @@ describe("findEntityTool", () => {
 
     const result = await findEntityTool.execute!({ query: "Văn A" }, { toolCallId: "t", messages: [] });
     if (result && typeof result === "object" && !(Symbol.asyncIterator in result)) {
-      expect((result as any).matches.length).toBeGreaterThan(0);
-      expect((result as any).matches[0].type).toBe("pair");
+      expect((result as FindEntityResult).matches.length).toBeGreaterThan(0);
+      expect((result as FindEntityResult).matches[0].type).toBe("pair");
     }
   });
 
@@ -35,7 +39,7 @@ describe("findEntityTool", () => {
 
     const result = await findEntityTool.execute!({ query: "xyz" }, { toolCallId: "t", messages: [] });
     if (result && typeof result === "object" && !(Symbol.asyncIterator in result)) {
-      expect((result as any).matches.length).toBe(0);
+      expect((result as FindEntityResult).matches.length).toBe(0);
     }
   });
 });
