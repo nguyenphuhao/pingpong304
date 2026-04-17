@@ -25,7 +25,6 @@ type DoublesKoRow = {
   winner: string | null;
   sets_a: number;
   sets_b: number;
-  table: number | null;
   next_match_id: string | null;
   next_slot: "a" | "b" | null;
 };
@@ -57,7 +56,7 @@ type TeamKoRow = {
 // ── Selects ──
 
 const DOUBLES_KO_SELECT =
-  "id, round, best_of, label_a, label_b, entry_a, entry_b, sets, status, winner, sets_a, sets_b, table, next_match_id, next_slot";
+  "id, round, best_of, label_a, label_b, entry_a, entry_b, sets, status, winner, sets_a, sets_b, next_match_id, next_slot";
 
 const TEAM_KO_SELECT =
   "id, round, label_a, label_b, entry_a, entry_b, status, score_a, score_b, winner, individual, next_match_id, next_slot";
@@ -108,7 +107,7 @@ function resolveDoublesKo(
     id: row.id,
     round: row.round,
     bestOf: row.best_of,
-    table: row.table ?? null,
+    table: null,
     labelA: row.label_a ?? "",
     labelB: row.label_b ?? "",
     entryA: row.entry_a ? { id: row.entry_a, label: labelOf(row.entry_a) } : null,
