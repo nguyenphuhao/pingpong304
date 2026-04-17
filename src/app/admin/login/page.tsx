@@ -14,7 +14,7 @@ export default function LoginPage() {
     <main className="flex min-h-dvh items-center justify-center p-4">
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle>Đăng nhập Admin</CardTitle>
+          <CardTitle>Đăng nhập Ban Tổ Chức</CardTitle>
           <CardDescription>Giải bóng bàn nội bộ</CardDescription>
         </CardHeader>
         <CardContent>

@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { Shield, Swords, Trophy, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { GroupStageTabs } from "./_publicGroup";
@@ -69,11 +68,6 @@ export function ContentHome({
         />
       </Section>
 
-      <footer className="mt-auto flex items-center justify-end pt-6 text-sm text-muted-foreground">
-        <Link href="/admin/login" className="underline-offset-4 hover:underline">
-          Admin
-        </Link>
-      </footer>
     </main>
   );
 }

@@ -11,8 +11,10 @@ import {
   Pencil,
   Plus,
   Radio,
+  Search,
   Trash2,
   Trophy,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -367,23 +369,74 @@ export function DoublesSchedule({
 
       <StandingsCard rows={standings} diffLabel="Hiệu số ván" />
 
-      <div>
-        <SectionHeader
-          title="Lịch thi đấu vòng bảng"
-          subtitle={`${matches.length} trận · vòng tròn`}
+      <MatchScheduleSection
+        title="Lịch thi đấu vòng bảng"
+        subtitle={`${matches.length} trận · vòng tròn`}
+        matches={matches}
+        searchText={(m) => `${m.pairA.label} ${m.pairB.label}`}
+        renderMatch={(m, i) => (
+          <DoublesMatchCard
+            key={m.id}
+            match={m}
+            index={i}
+            readOnly={readOnly}
+            onMatchUpdated={handleMatchUpdated}
+          />
+        )}
+      />
+    </div>
+  );
+}
+
+function MatchScheduleSection<T extends { id: string }>({
+  title,
+  subtitle,
+  matches,
+  searchText,
+  renderMatch,
+}: {
+  title: string;
+  subtitle: string;
+  matches: T[];
+  searchText: (m: T) => string;
+  renderMatch: (m: T, originalIndex: number) => React.ReactNode;
+}) {
+  const [search, setSearch] = useState("");
+  const q = search.toLowerCase();
+
+  const filtered = matches
+    .map((m, i) => ({ match: m, index: i + 1 }))
+    .filter(({ match }) => !q || searchText(match).toLowerCase().includes(q));
+
+  return (
+    <div>
+      <SectionHeader title={title} subtitle={subtitle} />
+      <div className="relative mb-3">
+        <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Tìm theo tên VĐV..."
+          className="h-9 pl-8 pr-8 text-sm"
         />
-        <div className="flex flex-col gap-2">
-          {matches.map((m, i) => (
-            <DoublesMatchCard
-              key={m.id}
-              match={m}
-              index={i + 1}
-              readOnly={readOnly}
-              altBg={i % 2 === 1 ? color.rowAlt : ""}
-              onMatchUpdated={handleMatchUpdated}
-            />
-          ))}
-        </div>
+        {search && (
+          <button
+            type="button"
+            onClick={() => setSearch("")}
+            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-sm p-0.5 text-muted-foreground hover:text-foreground"
+            aria-label="Xoá tìm kiếm"
+          >
+            <X className="size-4" />
+          </button>
+        )}
+      </div>
+      <div className="flex flex-col gap-2">
+        {filtered.length === 0 && (
+          <p className="py-4 text-center text-sm text-muted-foreground">
+            Không tìm thấy trận nào
+          </p>
+        )}
+        {filtered.map(({ match, index }) => renderMatch(match, index))}
       </div>
     </div>
   );
@@ -393,13 +446,11 @@ function DoublesMatchCard({
   match: initialMatch,
   index,
   readOnly,
-  altBg = "",
   onMatchUpdated,
 }: {
   match: MatchResolved;
   index: number;
   readOnly?: boolean;
-  altBg?: string;
   onMatchUpdated?: (m: MatchResolved) => void;
 }) {
   const [match, setMatch] = useState<MatchResolved>(initialMatch);
@@ -439,7 +490,7 @@ function DoublesMatchCard({
   };
 
   return (
-    <Card className={`p-3 ${altBg}`}>
+    <Card className={`p-3 ${locked ? "border-green-500/30 bg-green-500/5" : ""}`}>
       <div className="mb-2 flex items-center justify-between text-sm text-muted-foreground">
         <div className="flex items-center gap-2">
           <span className="font-medium text-foreground">Trận {index}</span>
@@ -467,7 +518,7 @@ function DoublesMatchCard({
       <div className="mt-2 flex items-center justify-between gap-2">
         <SetScores sets={match.sets} />
         {!readOnly && (
-          <div className="flex shrink-0 items-center gap-1">
+          <div className="flex shrink-0 items-center gap-2">
             <EditDoublesMatchDialog
               title={`Trận ${index}`}
               match={match}
@@ -556,26 +607,33 @@ export function TeamSchedule({
 
       <StandingsCard rows={standings} diffLabel="Hiệu số trận cá nhân" />
 
-      <div>
-        <SectionHeader
-          title="Lịch thi đấu vòng bảng"
-          subtitle={`${matches.length} trận · vòng tròn`}
-        />
-        <div className="flex flex-col gap-3">
-          {matches.map((m, i) => (
-            <TeamMatchCard
-              key={m.id}
-              match={m}
-              index={i + 1}
-              readOnly={readOnly}
-              altBg={i % 2 === 1 ? color.rowAlt : ""}
-              teamAPlayers={teamPlayersByTeamId[m.teamA.id] ?? []}
-              teamBPlayers={teamPlayersByTeamId[m.teamB.id] ?? []}
-              onMatchUpdated={handleMatchUpdated}
-            />
-          ))}
-        </div>
-      </div>
+      <MatchScheduleSection
+        title="Lịch thi đấu vòng bảng"
+        subtitle={`${matches.length} trận · vòng tròn`}
+        matches={matches}
+        searchText={(m) => {
+          const players = [
+            m.teamA.name,
+            m.teamB.name,
+            ...m.individual.flatMap((s) => [
+              ...s.playersA.map((p) => p.name),
+              ...s.playersB.map((p) => p.name),
+            ]),
+          ];
+          return players.join(" ");
+        }}
+        renderMatch={(m, i) => (
+          <TeamMatchCard
+            key={m.id}
+            match={m}
+            index={i}
+            readOnly={readOnly}
+            teamAPlayers={teamPlayersByTeamId[m.teamA.id] ?? []}
+            teamBPlayers={teamPlayersByTeamId[m.teamB.id] ?? []}
+            onMatchUpdated={handleMatchUpdated}
+          />
+        )}
+      />
     </div>
   );
 }
@@ -626,7 +684,6 @@ function TeamMatchCard({
   match: initialMatch,
   index,
   readOnly,
-  altBg = "",
   teamAPlayers,
   teamBPlayers,
   onMatchUpdated,
@@ -634,7 +691,6 @@ function TeamMatchCard({
   match: TeamMatchResolved;
   index: number;
   readOnly?: boolean;
-  altBg?: string;
   teamAPlayers: Array<{ id: string; name: string }>;
   teamBPlayers: Array<{ id: string; name: string }>;
   onMatchUpdated?: (m: TeamMatchResolved) => void;
@@ -842,8 +898,10 @@ function TeamMatchCard({
     await doSave("scheduled", null, clearedSubs);
   };
 
+  const locked = status === "done" || status === "forfeit";
+
   return (
-    <Card className={`p-3 ${altBg}`}>
+    <Card className={`p-3 ${locked ? "border-green-500/30 bg-green-500/5" : ""}`}>
       <div className="mb-2 flex items-center justify-between text-sm text-muted-foreground">
         <div className="flex items-center gap-2">
           <span className="font-medium text-foreground">Trận {index}</span>
@@ -874,7 +932,7 @@ function TeamMatchCard({
           {status === "done" || status === "forfeit" ? (
             <Button
               type="button"
-              size="xs"
+              size="sm"
               variant="ghost"
               onClick={unlockMatch}
               disabled={pending}
@@ -885,7 +943,7 @@ function TeamMatchCard({
           ) : canFinalize ? (
             <Button
               type="button"
-              size="xs"
+              size="sm"
               onClick={finalize}
               disabled={pending}
             >
@@ -1145,7 +1203,7 @@ function IndividualMatchRow({
       <div className="mt-1.5 flex items-center justify-between gap-2">
         <SetScores sets={match.sets} />
         {!readOnly && (
-          <div className="flex shrink-0 items-center gap-1">
+          <div className="flex shrink-0 items-center gap-2">
             <EditMatchDialog
               title={match.label}
               participants={`${match.playerA}  vs  ${match.playerB}`}
@@ -1426,7 +1484,7 @@ function LockToggleButton({
         type="button"
         onClick={onToggle}
         variant="ghost"
-        size={compact ? "icon-xs" : "icon-sm"}
+        size={compact ? "icon-sm" : "icon"}
         aria-label="Mở lại để sửa"
         title="Mở lại để sửa"
         className="bg-muted hover:bg-muted/70"
@@ -1440,7 +1498,7 @@ function LockToggleButton({
     <Button
       type="button"
       onClick={onToggle}
-      size={compact ? "xs" : "sm"}
+      size={compact ? "sm" : "default"}
       variant="outline"
       aria-label="Chốt kết quả"
       disabled={disabled}
@@ -1465,7 +1523,7 @@ function ClearResultButton({
         disabled={disabled}
         render={
           <Button
-            size="icon-sm"
+            size="icon"
             variant="ghost"
             aria-label="Xoá kết quả"
             title="Xoá kết quả"
@@ -1530,7 +1588,7 @@ function LiveToggleButton({
       <Button
         type="button"
         onClick={onToggle}
-        size={compact ? "icon-xs" : "icon-sm"}
+        size={compact ? "icon-sm" : "icon"}
         variant="ghost"
         aria-label="Dừng live"
         title="Dừng live"
@@ -1545,7 +1603,7 @@ function LiveToggleButton({
     <Button
       type="button"
       onClick={onToggle}
-      size={compact ? "xs" : "sm"}
+      size={compact ? "sm" : "default"}
       variant="outline"
       aria-label="Bắt đầu đấu"
       disabled={disabled}
@@ -1588,7 +1646,7 @@ function EditMatchDialog({
         disabled={disabled}
         render={
           <Button
-            size={compact ? "icon-xs" : "icon-sm"}
+            size={compact ? "icon-sm" : "icon"}
             variant="ghost"
             aria-label="Sửa tỉ số"
             disabled={disabled}
@@ -1750,7 +1808,7 @@ function EditDoublesMatchDialog({
         disabled={disabled}
         render={
           <Button
-            size="icon-sm"
+            size="icon"
             variant="ghost"
             aria-label="Sửa tỉ số"
             disabled={disabled}
@@ -1989,7 +2047,7 @@ function KnockoutMatchCard({
   const accent = ROUND_STYLE[match.round].accent;
 
   return (
-    <Card className={`border-l-4 p-3 ${accent}`}>
+    <Card className={`border-l-4 p-3 ${accent} ${locked ? "border-green-500/30 bg-green-500/5" : ""}`}>
       <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
         <div className="flex items-center gap-2">
           <span className="font-medium text-foreground">

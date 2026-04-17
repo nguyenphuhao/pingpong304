@@ -10,15 +10,17 @@ export default function AdminHome() {
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col gap-5 p-4">
       <header className="flex items-center justify-between gap-2">
         <div>
-          <h1 className="text-xl font-semibold">Admin</h1>
+          <h1 className="text-xl font-semibold">Ban Tổ Chức</h1>
           <p className="text-sm text-muted-foreground">Chọn nội dung cần quản lý</p>
         </div>
         <div className="flex items-center gap-2">
           <Link
             href="/"
-            className="inline-flex items-center gap-1 rounded-md border px-2.5 py-1.5 text-sm hover:bg-muted"
+            aria-label="Trang công khai"
+            title="Trang công khai"
+            className="inline-flex size-9 items-center justify-center rounded-md border hover:bg-muted"
           >
-            <ExternalLink className="size-3.5" /> Trang công khai
+            <ExternalLink className="size-4" />
           </Link>
           <form action={logoutAction}>
             <Button type="submit" variant="outline" size="sm">

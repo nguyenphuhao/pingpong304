@@ -11,7 +11,7 @@ const fontSans = Be_Vietnam_Pro({
 });
 
 export const metadata: Metadata = {
-  title: "PingPong 304",
+  title: "CLB Bóng Bàn Bình Tân",
   description: "Giải bóng bàn nội bộ",
 };
 

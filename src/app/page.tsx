@@ -4,6 +4,7 @@ import {
   CalendarDays,
   Clock,
   Flag,
+  KeyRound,
   MapPin,
   Medal,
   Shield,
@@ -23,7 +24,17 @@ export default function Home() {
           <p className="text-xs font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
             CLB Bóng Bàn Bình Tân
           </p>
-          <Badge variant="secondary">Sắp diễn ra</Badge>
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary">Sắp diễn ra</Badge>
+            <Link
+              href="/admin/login"
+              aria-label="Ban Tổ Chức"
+              title="Ban Tổ Chức"
+              className="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+            >
+              <KeyRound className="size-4" />
+            </Link>
+          </div>
         </div>
 
         <h1 className="text-base font-medium text-muted-foreground">
@@ -175,11 +186,6 @@ export default function Home() {
         </Card>
       </Section>
 
-      <footer className="mt-auto flex items-center justify-end pt-4 text-sm text-muted-foreground">
-        <Link href="/admin/login" className="underline-offset-4 hover:underline">
-          Admin
-        </Link>
-      </footer>
     </main>
   );
 }
