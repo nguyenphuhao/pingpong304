@@ -18,12 +18,6 @@ export function StandingsSummary({
 }) {
   const prefix = kind === "doubles" ? "/d" : "/t";
 
-  // chunk groups into pairs for 2-column pages
-  const pages: GroupResolved[][] = [];
-  for (let i = 0; i < groups.length; i += 2) {
-    pages.push(groups.slice(i, i + 2));
-  }
-
   return (
     <section>
       <div className="mb-2 flex items-center gap-2">
@@ -32,55 +26,57 @@ export function StandingsSummary({
       </div>
 
       <SwipeCarousel dotColor="bg-blue-500">
-        {pages.map((page, pi) => (
-          <div key={pi} className="grid grid-cols-2 gap-2">
-            {page.map((g) => {
-              const rows = standings.get(g.id) ?? [];
-              const top2 = rows.slice(0, 2);
-              const c = groupColor(g.id);
-              const played = rows.some((r) => r.played > 0);
-              return (
-                <div key={g.id} className="rounded-lg bg-card p-2.5">
-                  <div className={`mb-1.5 text-xs font-semibold ${c.badge} inline-block rounded px-1.5 py-0.5`}>
-                    {g.name.replace(/^Bảng\s*/i, "")}
-                  </div>
-                  {!played ? (
-                    <div className="text-sm italic text-muted-foreground">
-                      Chưa có kết quả
-                    </div>
-                  ) : (
-                    <div className="space-y-0.5">
-                      {top2.map((r, ri) => (
-                        <div
-                          key={r.entry}
-                          className={`flex items-center justify-between text-xs ${
-                            ri > 0 ? "text-muted-foreground" : ""
-                          }`}
-                        >
-                          <span className="truncate">
-                            <span
-                              className={
-                                ri === 0
-                                  ? "text-yellow-500"
-                                  : "text-muted-foreground"
-                              }
-                            >
-                              {ri + 1}.
-                            </span>{" "}
-                            {r.entry}
-                          </span>
-                          <span className="ml-1 shrink-0 font-semibold">
-                            {r.points}đ
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+        {groups.map((g) => {
+          const rows = standings.get(g.id) ?? [];
+          const c = groupColor(g.id);
+          const played = rows.some((r) => r.played > 0);
+          return (
+            <div key={g.id} className={`rounded-xl border p-3 ${c.border} ${c.bg}`}>
+              <div className="mb-2 flex items-center gap-2">
+                <span className={`flex size-7 items-center justify-center rounded-md text-sm font-semibold ${c.badge}`}>
+                  {g.name.replace(/^Bảng\s*/i, "")}
+                </span>
+                <span className="font-semibold">{g.name}</span>
+                <span className="ml-auto text-xs text-muted-foreground">
+                  {g.entries.length} {kind === "doubles" ? "cặp" : "đội"}
+                </span>
+              </div>
+              {!played ? (
+                <div className="py-2 text-sm italic text-muted-foreground">
+                  Chưa có kết quả
                 </div>
-              );
-            })}
-          </div>
-        ))}
+              ) : (
+                <div className="space-y-1">
+                  {rows.map((r, ri) => (
+                    <div
+                      key={r.entry}
+                      className="flex items-center gap-2 rounded-lg bg-background/60 px-2.5 py-1.5 text-sm"
+                    >
+                      <span
+                        className={`inline-flex size-5 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
+                          ri === 0
+                            ? "bg-yellow-500/20 text-yellow-600 dark:text-yellow-400"
+                            : ri === 1
+                              ? "bg-gray-300/30 text-gray-500 dark:text-gray-400"
+                              : "bg-muted text-muted-foreground"
+                        }`}
+                      >
+                        {ri + 1}
+                      </span>
+                      <span className="min-w-0 flex-1 truncate">{r.entry}</span>
+                      <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                        {r.won}T {r.lost}B
+                      </span>
+                      <span className="shrink-0 min-w-[28px] text-right font-semibold tabular-nums">
+                        {r.points}đ
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </SwipeCarousel>
 
       <Link
