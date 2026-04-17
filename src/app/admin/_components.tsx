@@ -320,7 +320,7 @@ export function DoublesSchedule({
   groupId,
   groupName,
   entries,
-  matches,
+  matches: initialMatches,
   readOnly,
 }: {
   groupId: string;
@@ -329,6 +329,10 @@ export function DoublesSchedule({
   matches: MatchResolved[];
   readOnly?: boolean;
 }) {
+  const [matches, setMatches] = useState(initialMatches);
+  const handleMatchUpdated = (updated: MatchResolved) => {
+    setMatches((prev) => prev.map((m) => (m.id === updated.id ? updated : m)));
+  };
   const standings = computeDoublesStandings(entries, matches);
   const color = groupColor(groupId);
   return (
@@ -376,6 +380,7 @@ export function DoublesSchedule({
               index={i + 1}
               readOnly={readOnly}
               altBg={i % 2 === 1 ? color.rowAlt : ""}
+              onMatchUpdated={handleMatchUpdated}
             />
           ))}
         </div>
@@ -389,11 +394,13 @@ function DoublesMatchCard({
   index,
   readOnly,
   altBg = "",
+  onMatchUpdated,
 }: {
   match: MatchResolved;
   index: number;
   readOnly?: boolean;
   altBg?: string;
+  onMatchUpdated?: (m: MatchResolved) => void;
 }) {
   const [match, setMatch] = useState<MatchResolved>(initialMatch);
   const [pending, setPending] = useState(false);
@@ -419,6 +426,7 @@ function DoublesMatchCard({
     try {
       const updated = await patchDoublesMatch(match.id, body);
       setMatch(updated);
+      onMatchUpdated?.(updated);
       toast.success("Đã lưu");
       return true;
     } catch (e) {
@@ -499,7 +507,7 @@ export function TeamSchedule({
   groupId,
   groupName,
   entries,
-  matches,
+  matches: initialMatches,
   teamPlayersByTeamId = {},
   readOnly,
 }: {
@@ -510,6 +518,10 @@ export function TeamSchedule({
   teamPlayersByTeamId?: Record<string, Array<{ id: string; name: string }>>;
   readOnly?: boolean;
 }) {
+  const [matches, setMatches] = useState(initialMatches);
+  const handleMatchUpdated = (updated: TeamMatchResolved) => {
+    setMatches((prev) => prev.map((m) => (m.id === updated.id ? updated : m)));
+  };
   const standings = computeTeamStandings(entries, matches);
   const color = groupColor(groupId);
   return (
@@ -559,6 +571,7 @@ export function TeamSchedule({
               altBg={i % 2 === 1 ? color.rowAlt : ""}
               teamAPlayers={teamPlayersByTeamId[m.teamA.id] ?? []}
               teamBPlayers={teamPlayersByTeamId[m.teamB.id] ?? []}
+              onMatchUpdated={handleMatchUpdated}
             />
           ))}
         </div>
@@ -616,6 +629,7 @@ function TeamMatchCard({
   altBg = "",
   teamAPlayers,
   teamBPlayers,
+  onMatchUpdated,
 }: {
   match: TeamMatchResolved;
   index: number;
@@ -623,6 +637,7 @@ function TeamMatchCard({
   altBg?: string;
   teamAPlayers: Array<{ id: string; name: string }>;
   teamBPlayers: Array<{ id: string; name: string }>;
+  onMatchUpdated?: (m: TeamMatchResolved) => void;
 }) {
   const [match, setMatch] = useState<TeamMatchResolved>(initialMatch);
   const [subs, setSubs] = useState<SubMatchResolved[]>(initialMatch.individual);
@@ -687,6 +702,7 @@ function TeamMatchCard({
         winner: nextStatus === "forfeit" ? nextWinnerId : null,
       });
       setMatch(updated);
+      onMatchUpdated?.(updated);
       setSubs(updated.individual);
       setStatus(updated.status);
       setWinnerId(updated.winner?.id ?? null);
