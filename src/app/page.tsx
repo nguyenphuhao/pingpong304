@@ -63,6 +63,20 @@ export default function Home() {
         </div>
       </Card>
 
+      {/* THÔNG BÁO BTC */}
+      <Card className="border-amber-500/40 bg-amber-500/10 p-4">
+        <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-amber-700 dark:text-amber-400">
+          <Flag className="size-4" />
+          Thông báo từ BTC
+        </div>
+        <ul className="space-y-1.5 text-sm text-muted-foreground">
+          <li>• VĐV tập trung điểm danh từ <span className="font-medium text-foreground">7h00 – 7h30</span></li>
+          <li>• Khai mạc & thi đấu lúc <span className="font-medium text-foreground">7h35</span></li>
+          <li>• Đồng đội: vòng bảng & BK đánh <span className="font-medium text-foreground">3 lượt</span> (Đơn – Đôi – Đơn), mỗi trận <span className="font-medium text-foreground">3 ván</span></li>
+          <li>• Chung kết: 3 hoặc 5 lượt tuỳ thời gian thực tế</li>
+        </ul>
+      </Card>
+
       {/* LỊCH SỰ KIỆN */}
       <Section
         icon={<Clock className="size-4 text-emerald-600 dark:text-emerald-400" />}
@@ -70,9 +84,10 @@ export default function Home() {
         subtitle="19/04/2026"
       >
         <div className="flex flex-col gap-2">
-          <ScheduleRow time="07:15" label="Khai mạc" icon={<Flag className="size-4 text-red-600 dark:text-red-400" />} />
-          <ScheduleRow time="08:00" label="Nội dung Đồng đội" icon={<Shield className="size-4 text-violet-600 dark:text-violet-400" />} />
-          <ScheduleRow time="13:00" label="Nội dung Đôi" icon={<Users className="size-4 text-blue-600 dark:text-blue-400" />} />
+          <ScheduleRow time="07:00" label="Tập trung · Điểm danh" icon={<Clock className="size-4 text-muted-foreground" />} />
+          <ScheduleRow time="07:35" label="Khai mạc & Thi đấu" icon={<Flag className="size-4 text-red-600 dark:text-red-400" />} />
+          <ScheduleRow time="Sáng" label="Nội dung Đồng đội" icon={<Shield className="size-4 text-violet-600 dark:text-violet-400" />} />
+          <ScheduleRow time="Chiều" label="Nội dung Đôi" icon={<Users className="size-4 text-blue-600 dark:text-blue-400" />} />
         </div>
       </Section>
 
@@ -141,7 +156,8 @@ export default function Home() {
             </div>
             <ul className="space-y-2 text-muted-foreground">
               <li>• Mỗi đội <span className="text-foreground">3 VĐV</span></li>
-              <li>• Mỗi trận có <span className="text-foreground">3 lượt</span>: 2 đơn – 1 đôi</li>
+              <li>• Vòng bảng & BK: <span className="text-foreground">3 lượt</span> (Đơn – Đôi – Đơn), mỗi trận <span className="text-foreground">3 ván</span></li>
+              <li>• Chung kết: <span className="text-foreground">3 hoặc 5 lượt</span> tuỳ tình hình</li>
               <li>• Vòng bảng → Bán kết → Chung kết</li>
             </ul>
           </Card>
