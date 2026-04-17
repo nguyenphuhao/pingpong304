@@ -1529,11 +1529,27 @@ function TeamSubMatchRow({
       <div className="mt-1.5 flex items-center justify-between gap-2">
         <SetScores sets={sub.sets} />
         {!readOnly && (
-          <SubSetsEditor
-            sub={sub}
-            onSetsChange={(sets) => onChange({ sets })}
-            onBestOfChange={(bestOf) => onChange({ bestOf })}
-          />
+          <div className="flex items-center gap-1">
+            <AiSingleMatchButton
+              matchContext={{
+                id: sub.id,
+                type: "doubles",
+                bestOf: sub.bestOf,
+                sideA: sub.playersA.length > 0
+                  ? sub.playersA.map((p) => p.name).join(" / ")
+                  : "Đội A",
+                sideB: sub.playersB.length > 0
+                  ? sub.playersB.map((p) => p.name).join(" / ")
+                  : "Đội B",
+              }}
+              onApply={(sets) => onChange({ sets })}
+            />
+            <SubSetsEditor
+              sub={sub}
+              onSetsChange={(sets) => onChange({ sets })}
+              onBestOfChange={(bestOf) => onChange({ bestOf })}
+            />
+          </div>
         )}
       </div>
     </li>
