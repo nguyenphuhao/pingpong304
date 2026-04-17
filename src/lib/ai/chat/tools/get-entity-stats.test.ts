@@ -41,7 +41,7 @@ describe("getEntityStatsTool — pair", () => {
       doublesGroupMidTournament.matches,
     );
 
-    const result = await (getEntityStatsTool.execute as ExecuteFunction)(
+    const result = await (getEntityStatsTool.execute as unknown as ExecuteFunction)(
       { entityId: "p1", type: "pair" },
       { toolCallId: "t", messages: [] },
     );
@@ -53,7 +53,7 @@ describe("getEntityStatsTool — pair", () => {
   it("throws NOT_FOUND when entity not in any group", async () => {
     (fetchDoublesGroups as ReturnType<typeof vi.fn>).mockResolvedValue([]);
     await expect(
-      (getEntityStatsTool.execute as ExecuteFunction)(
+      (getEntityStatsTool.execute as unknown as ExecuteFunction)(
         { entityId: "unknown", type: "pair" },
         { toolCallId: "t", messages: [] },
       ),
