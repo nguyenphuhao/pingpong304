@@ -225,12 +225,6 @@ export function AiSingleMatchButton({
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                send();
-              }
-            }}
             placeholder="Nhập kết quả hoặc gửi ảnh..."
             className="min-h-8 max-h-24 flex-1 resize-none rounded-md border border-input bg-background px-3 py-1.5 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             rows={1}
