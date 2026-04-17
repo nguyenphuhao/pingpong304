@@ -57,6 +57,8 @@ import { deriveTeamScore, deriveTeamWinner } from "@/lib/matches/derive";
 import { toast } from "sonner";
 import { nanoid } from "nanoid";
 import { PlayerPicker } from "./_player-picker";
+import { computeDoublesStandings, computeTeamStandings } from "@/lib/standings/compute";
+import type { StandingRow } from "@/lib/standings/types";
 import { groupColor } from "../_groupColors";
 import { PlayersSection } from "./_players-section";
 import { PairsSection } from "./_pairs-section";
@@ -242,130 +244,6 @@ function SetScores({ sets }: { sets: SetScore[] }) {
   );
 }
 
-type StandingRow = {
-  entry: string;
-  played: number;
-  won: number;
-  lost: number;
-  diff: number;
-  points: number;
-};
-
-type LegacyDoublesMatch = {
-  id: string;
-  groupId: string;
-  pairA: string;
-  pairB: string;
-  bestOf: BestOf;
-  sets: SetScore[];
-  status: "scheduled" | "done";
-  table?: number;
-};
-
-type LegacyTeamMatch = {
-  id: string;
-  groupId: string;
-  teamA: string;
-  teamB: string;
-  scoreA: number;
-  scoreB: number;
-  status: "scheduled" | "done";
-  table?: number;
-};
-
-function resolvedToLegacyStatus(s: Status): "scheduled" | "done" {
-  if (s === "done" || s === "forfeit") return "done";
-  return "scheduled";
-}
-
-function resolvedToLegacyDoublesMatch(m: MatchResolved): LegacyDoublesMatch {
-  return {
-    id: m.id,
-    groupId: m.groupId,
-    pairA: m.pairA.label,
-    pairB: m.pairB.label,
-    bestOf: m.bestOf,
-    sets: m.sets,
-    status: resolvedToLegacyStatus(m.status),
-    table: m.table ?? undefined,
-  };
-}
-
-function resolvedToLegacyTeamMatch(m: TeamMatchResolved): LegacyTeamMatch {
-  return {
-    id: m.id,
-    groupId: m.groupId,
-    teamA: m.teamA.name,
-    teamB: m.teamB.name,
-    scoreA: m.scoreA,
-    scoreB: m.scoreB,
-    status: resolvedToLegacyStatus(m.status),
-    table: m.table ?? undefined,
-  };
-}
-
-function computeDoublesStandings(
-  entries: string[],
-  matches: LegacyDoublesMatch[]
-): StandingRow[] {
-  const rows = new Map<string, StandingRow>(
-    entries.map((e) => [e, { entry: e, played: 0, won: 0, lost: 0, diff: 0, points: 0 }])
-  );
-  for (const m of matches) {
-    if (m.status !== "done") continue;
-    const { a, b } = setsSummary(m.sets);
-    const ra = rows.get(m.pairA);
-    const rb = rows.get(m.pairB);
-    if (!ra || !rb) continue;
-    ra.played += 1;
-    rb.played += 1;
-    ra.diff += a - b;
-    rb.diff += b - a;
-    if (a > b) {
-      ra.won += 1;
-      rb.lost += 1;
-      ra.points += 2;
-    } else if (b > a) {
-      rb.won += 1;
-      ra.lost += 1;
-      rb.points += 2;
-    }
-  }
-  return [...rows.values()].sort(
-    (x, y) => y.points - x.points || y.diff - x.diff || y.won - x.won
-  );
-}
-
-function computeTeamStandings(
-  entries: string[],
-  matches: LegacyTeamMatch[]
-): StandingRow[] {
-  const rows = new Map<string, StandingRow>(
-    entries.map((e) => [e, { entry: e, played: 0, won: 0, lost: 0, diff: 0, points: 0 }])
-  );
-  for (const m of matches) {
-    if (m.status !== "done") continue;
-    const ra = rows.get(m.teamA);
-    const rb = rows.get(m.teamB);
-    if (!ra || !rb) continue;
-    ra.played += 1;
-    rb.played += 1;
-    ra.diff += m.scoreA - m.scoreB;
-    rb.diff += m.scoreB - m.scoreA;
-    if (m.scoreA > m.scoreB) {
-      ra.won += 1;
-      rb.lost += 1;
-      ra.points += 2;
-    } else if (m.scoreB > m.scoreA) {
-      rb.won += 1;
-      ra.lost += 1;
-      rb.points += 2;
-    }
-  }
-  return [...rows.values()].sort(
-    (x, y) => y.points - x.points || y.diff - x.diff || y.won - x.won
-  );
-}
 
 function RankBadge({ rank }: { rank: number; active: boolean }) {
   return (
@@ -403,10 +281,10 @@ function StandingsCard({
       <ol className="flex flex-col gap-2">
         {rows.map((r, i) => (
           <li
-            key={r.entry}
+            key={r.entryId}
             className="flex items-center gap-3 rounded-lg border bg-card/40 p-3"
           >
-            <RankBadge rank={i + 1} active={r.played > 0} />
+            <RankBadge rank={r.rank} active={r.played > 0} />
             <div className="min-w-0 flex-1">
               <div className="font-medium leading-tight">{r.entry}</div>
               <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs tabular-nums text-muted-foreground">
@@ -447,14 +325,11 @@ export function DoublesSchedule({
 }: {
   groupId: string;
   groupName: string;
-  entries: string[];
+  entries: { id: string; label: string }[];
   matches: MatchResolved[];
   readOnly?: boolean;
 }) {
-  const standings = computeDoublesStandings(
-    entries,
-    matches.map(resolvedToLegacyDoublesMatch)
-  );
+  const standings = computeDoublesStandings(entries, matches);
   const color = groupColor(groupId);
   return (
     <div className="flex flex-col gap-4">
@@ -474,13 +349,13 @@ export function DoublesSchedule({
         <ol className="space-y-1 text-sm">
           {entries.map((e, i) => (
             <li
-              key={e + i}
+              key={e.id}
               className="flex items-center gap-2 rounded-md bg-background/60 px-2 py-1.5"
             >
               <span className="inline-flex size-5 shrink-0 items-center justify-center rounded bg-muted text-xs font-medium text-muted-foreground">
                 {i + 1}
               </span>
-              <span className="truncate">{e}</span>
+              <span className="truncate">{e.label}</span>
             </li>
           ))}
         </ol>
@@ -630,15 +505,12 @@ export function TeamSchedule({
 }: {
   groupId: string;
   groupName: string;
-  entries: string[];
+  entries: { id: string; label: string }[];
   matches: TeamMatchResolved[];
   teamPlayersByTeamId?: Record<string, Array<{ id: string; name: string }>>;
   readOnly?: boolean;
 }) {
-  const standings = computeTeamStandings(
-    entries,
-    matches.map(resolvedToLegacyTeamMatch)
-  );
+  const standings = computeTeamStandings(entries, matches);
   const color = groupColor(groupId);
   return (
     <div className="flex flex-col gap-4">
@@ -658,13 +530,13 @@ export function TeamSchedule({
         <ol className="space-y-1 text-sm">
           {entries.map((e, i) => (
             <li
-              key={e + i}
+              key={e.id}
               className="flex items-center gap-2 rounded-md bg-background/60 px-2 py-1.5"
             >
               <span className="inline-flex size-5 shrink-0 items-center justify-center rounded bg-muted text-xs font-medium text-muted-foreground">
                 {i + 1}
               </span>
-              <span className="truncate">{e}</span>
+              <span className="truncate">{e.label}</span>
             </li>
           ))}
         </ol>
