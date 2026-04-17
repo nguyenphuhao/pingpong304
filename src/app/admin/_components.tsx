@@ -2021,6 +2021,19 @@ function KnockoutSection({
     }
   };
 
+  const handleReseed = async () => {
+    setSeeding(true);
+    try {
+      await deleteKo(kind);
+      await seedKo(kind);
+      router.refresh();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Lỗi cập nhật");
+    } finally {
+      setSeeding(false);
+    }
+  };
+
   const handleReset = async () => {
     setResetting(true);
     try {
@@ -2042,10 +2055,16 @@ function KnockoutSection({
           : "Chưa tạo bracket"}
         action={
           hasBracket ? (
-            <Button size="sm" variant="outline" onClick={handleReset} disabled={resetting}>
-              {resetting ? <Loader2 className="animate-spin" /> : <Trash2 />}
-              Xoá bracket
-            </Button>
+            <div className="flex gap-1">
+              <Button size="sm" onClick={handleReseed} disabled={seeding || resetting}>
+                {seeding ? <Loader2 className="animate-spin" /> : <Trophy />}
+                Cập nhật BXH
+              </Button>
+              <Button size="sm" variant="outline" onClick={handleReset} disabled={resetting || seeding}>
+                {resetting ? <Loader2 className="animate-spin" /> : <Trash2 />}
+                Xoá
+              </Button>
+            </div>
           ) : (
             <Button size="sm" onClick={handleSeed} disabled={seeding}>
               {seeding ? <Loader2 className="animate-spin" /> : <Trophy />}
