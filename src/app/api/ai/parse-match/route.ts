@@ -3,7 +3,14 @@ import { z } from "zod";
 import { generateObject, gateway } from "ai";
 import { requireAdmin, UnauthorizedError } from "@/lib/auth";
 import { buildSinglePrompt, buildBatchPrompt } from "@/lib/ai/prompts";
-import { SingleResultSchema, BatchResultSchema, RejectionSchema } from "@/lib/ai/schemas";
+import {
+  SingleResultSchema,
+  BatchResultSchema,
+  RejectionSchema,
+  AiSingleResultSchema,
+  AiBatchResultSchema,
+  AiRejectionSchema,
+} from "@/lib/ai/schemas";
 import type { UserContent } from "ai";
 
 const BestOfVal = z.union([z.literal(3), z.literal(5)]);
@@ -61,7 +68,13 @@ export async function POST(req: Request) {
       ? buildBatchPrompt(data.group!)
       : buildSinglePrompt(data.match!);
 
-    const responseSchema = isBatch
+    // AI-friendly schemas (no maxItems/minItems/refine — Anthropic rejects those)
+    const aiSchema = isBatch
+      ? z.union([AiBatchResultSchema, AiRejectionSchema])
+      : z.union([AiSingleResultSchema, AiRejectionSchema]);
+
+    // Full schemas for post-validation
+    const validationSchema = isBatch
       ? z.union([BatchResultSchema, RejectionSchema])
       : z.union([SingleResultSchema, RejectionSchema]);
 
@@ -76,7 +89,7 @@ export async function POST(req: Request) {
 
     const result = await generateObject({
       model: gateway("anthropic/claude-haiku-4.5"),
-      schema: responseSchema,
+      schema: aiSchema,
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userContent },
@@ -87,7 +100,10 @@ export async function POST(req: Request) {
       },
     });
 
-    return NextResponse.json({ data: result.object, error: null });
+    // Post-validate with full schema (maxItems, refine, etc.)
+    const validated = validationSchema.parse(result.object);
+
+    return NextResponse.json({ data: validated, error: null });
   } catch (err) {
     if (err instanceof UnauthorizedError) {
       return NextResponse.json({ data: null, error: "Unauthorized" }, { status: 401 });
