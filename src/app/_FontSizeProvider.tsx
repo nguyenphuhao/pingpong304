@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useState } from "react";
 import {
   FONT_SIZE_ATTR,
   parseFontSize,
@@ -16,13 +16,13 @@ type FontSizeCtx = {
 const Ctx = createContext<FontSizeCtx | null>(null);
 
 export function FontSizeProvider({ children }: { children: React.ReactNode }) {
-  const [size, setSizeState] = useState<FontSize>("base");
-
-  // After mount, sync state from DOM (the inline script set this before hydrate).
-  useEffect(() => {
-    const attr = document.documentElement.getAttribute(FONT_SIZE_ATTR);
-    setSizeState(parseFontSize(attr));
-  }, []);
+  // Seed from DOM on client (PreferencesScript has already run in <head>).
+  // On SSR, document is undefined; fall back to "base" — consumers that render
+  // only on the client will re-resolve after mount.
+  const [size, setSizeState] = useState<FontSize>(() => {
+    if (typeof document === "undefined") return "base";
+    return parseFontSize(document.documentElement.getAttribute(FONT_SIZE_ATTR));
+  });
 
   const setSize = (s: FontSize) => {
     setSizeState(s);
