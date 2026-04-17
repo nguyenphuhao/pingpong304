@@ -1,3 +1,4 @@
+import { Trophy } from "lucide-react";
 import type {
   DoublesKoResolved,
   TeamKoResolved,
@@ -50,8 +51,12 @@ export function PublicKnockoutSection({
     );
   }
 
+  const final = matches.find((m) => m.round === "f");
+  const finalDone = final && (final.status === "done" || final.status === "forfeit");
+
   return (
     <div className="flex flex-col gap-4">
+      {finalDone && <PublicFinalRanking matches={matches} />}
       {ROUND_ORDER.map((round) => {
         const list = matches.filter((m) => m.round === round);
         if (list.length === 0) return null;
@@ -191,6 +196,67 @@ function PublicKOCard({
           })}
         </ul>
       )}
+    </div>
+  );
+}
+
+function koWinnerName(m: KoMatch): string | null {
+  if (isDoublesKo(m)) return m.winner?.label ?? null;
+  return (m as TeamKoResolved).winner?.name ?? null;
+}
+
+function koLoserName(m: KoMatch): string | null {
+  const winnerId = isDoublesKo(m) ? m.winner?.id : (m as TeamKoResolved).winner?.id;
+  if (!winnerId) return null;
+  if (isDoublesKo(m)) {
+    return m.entryA?.id === winnerId ? (m.entryB?.label ?? null) : (m.entryA?.label ?? null);
+  }
+  const tm = m as TeamKoResolved;
+  return tm.entryA?.id === winnerId ? (tm.entryB?.name ?? null) : (tm.entryA?.name ?? null);
+}
+
+const MEDAL = [
+  { emoji: "🥇", bg: "bg-yellow-500/10 border-yellow-500/30", text: "text-yellow-700 dark:text-yellow-400" },
+  { emoji: "🥈", bg: "bg-gray-200/50 border-gray-300/50 dark:bg-gray-700/30 dark:border-gray-600/30", text: "text-gray-700 dark:text-gray-300" },
+  { emoji: "🥉", bg: "bg-amber-600/10 border-amber-600/20", text: "text-amber-700 dark:text-amber-500" },
+];
+
+function PublicFinalRanking({ matches }: { matches: KoMatch[] }) {
+  const final = matches.find((m) => m.round === "f");
+  if (!final || (final.status !== "done" && final.status !== "forfeit")) return null;
+
+  const first = koWinnerName(final);
+  const second = koLoserName(final);
+  const thirds = matches
+    .filter((m) => m.round === "sf")
+    .map((m) => koLoserName(m))
+    .filter(Boolean) as string[];
+
+  if (!first || !second) return null;
+
+  const rows = [
+    { rank: "Nhất", name: first, style: MEDAL[0] },
+    { rank: "Nhì", name: second, style: MEDAL[1] },
+    ...thirds.map((name) => ({ rank: "Ba", name, style: MEDAL[2] })),
+  ];
+
+  return (
+    <div className="rounded-xl border border-yellow-500/30 bg-gradient-to-b from-yellow-500/10 to-transparent p-4">
+      <div className="mb-3 flex items-center gap-2">
+        <Trophy className="size-4 text-yellow-600" />
+        <span className="text-sm font-semibold">Kết quả chung cuộc</span>
+      </div>
+      <div className="flex flex-col gap-2">
+        {rows.map((r, i) => (
+          <div key={i} className={`flex items-center gap-3 rounded-lg border px-3 py-2 ${r.style.bg}`}>
+            <span className="text-lg">{r.style.emoji}</span>
+            <div className="min-w-0 flex-1">
+              <span className={`text-sm font-semibold ${r.style.text}`}>{r.rank}</span>
+              <span className="ml-2 text-sm">{r.name}</span>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
