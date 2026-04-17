@@ -77,12 +77,11 @@ export function StandingsSummary({
                   </div>
                 ))}
               </div>
-              {played && (
-                <ExplainButton
-                  rows={rows}
-                  kind={kind === "doubles" ? "doubles" : "team"}
-                />
-              )}
+              <ExplainButton
+                rows={rows}
+                kind={kind === "doubles" ? "doubles" : "team"}
+                disabled={!played}
+              />
             </div>
           );
         })}
@@ -145,9 +144,11 @@ function markdownToHtml(md: string): string {
 function ExplainButton({
   rows,
   kind,
+  disabled = false,
 }: {
   rows: StandingRow[];
   kind: "doubles" | "team";
+  disabled?: boolean;
 }) {
   const [explanation, setExplanation] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -190,7 +191,8 @@ function ExplainButton({
       <button
         type="button"
         onClick={explain}
-        className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed py-1.5 text-xs text-muted-foreground transition-colors hover:bg-background/80"
+        disabled={disabled}
+        className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed py-1.5 text-xs text-muted-foreground transition-colors hover:bg-background/80 disabled:opacity-50"
       >
         <Sparkles className="size-3.5" />
         AI phân tích xếp hạng
