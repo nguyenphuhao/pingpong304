@@ -178,6 +178,7 @@ export async function PATCH(req: Request, ctx: Ctx) {
       updates.winner = null;
     }
 
+    updates.updated_at = new Date().toISOString();
     if (Object.keys(updates).length > 0) {
       const { error: updErr } = await supabaseServer
         .from("team_ko")
