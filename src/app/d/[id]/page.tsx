@@ -1,8 +1,9 @@
 import { notFound } from "next/navigation";
 import { PublicHeader } from "../../_public";
-import { DoublesSchedule } from "../../admin/_components";
+import { GroupStageTabs } from "../../_publicGroup";
 import { fetchDoublesGroupById } from "@/lib/db/groups";
 import { fetchDoublesMatchesByGroup } from "@/lib/db/matches";
+import { fetchGroupStandings } from "@/lib/db/standings";
 
 export const dynamic = "force-dynamic";
 
@@ -12,21 +13,23 @@ export default async function PublicDoublesGroupPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [group, matches] = await Promise.all([
-    fetchDoublesGroupById(id),
-    fetchDoublesMatchesByGroup(id),
-  ]);
+  const group = await fetchDoublesGroupById(id);
   if (!group) notFound();
+
+  const entries = group.entries.map((e) => e.label);
+  const [matches, standings] = await Promise.all([
+    fetchDoublesMatchesByGroup(id),
+    fetchGroupStandings("doubles", id, entries),
+  ]);
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col gap-5 p-4">
       <PublicHeader title={group.name} subtitle="Nội dung Đôi · vòng bảng" backHref="/d" />
-      <DoublesSchedule
-        groupId={group.id}
-        groupName={group.name}
-        entries={group.entries}
-        matches={matches}
-        readOnly
+      <GroupStageTabs
+        kind="doubles"
+        groups={[group]}
+        standings={new Map([[group.id, standings]])}
+        matchesByGroup={new Map([[group.id, matches]])}
       />
     </main>
   );

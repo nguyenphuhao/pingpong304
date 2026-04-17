@@ -13,24 +13,20 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { groupColor } from "./_groupColors";
-import { getStandings, type StandingRow } from "./_home";
-import {
-  MOCK_DOUBLES_MATCHES,
-  MOCK_TEAM_MATCHES,
-  TEAM_MATCH_TEMPLATE,
-  type DoublesMatch,
-  type IndividualMatch,
-  type SetScore,
-  type TeamMatch,
-} from "./admin/_mock";
+import type { StandingRow } from "@/lib/db/standings";
+import type { MatchResolved, TeamMatchResolved, SetScore } from "@/lib/schemas/match";
 import type { GroupResolved } from "@/lib/schemas/group";
 
 export function GroupStageTabs({
   kind,
   groups,
+  standings,
+  matchesByGroup,
 }: {
   kind: "doubles" | "teams";
   groups: GroupResolved[];
+  standings: Map<string, StandingRow[]>;
+  matchesByGroup: Map<string, MatchResolved[]> | Map<string, TeamMatchResolved[]>;
 }) {
   const entryLabel = kind === "doubles" ? "cặp" : "đội";
   const [active, setActive] = useState(groups[0]?.id ?? "");
@@ -76,7 +72,17 @@ export function GroupStageTabs({
         })}
       </div>
       <div className="mt-4">
-        <GroupTabContent kind={kind} group={activeGroup} entryLabel={entryLabel} />
+        <GroupTabContent
+          kind={kind}
+          group={activeGroup}
+          entryLabel={entryLabel}
+          standings={standings.get(activeGroup.id) ?? []}
+          matches={
+            (matchesByGroup as Map<string, MatchResolved[] | TeamMatchResolved[]>).get(
+              activeGroup.id,
+            ) ?? []
+          }
+        />
       </div>
     </div>
   );
@@ -86,14 +92,16 @@ function GroupTabContent({
   kind,
   group,
   entryLabel,
+  standings,
+  matches,
 }: {
   kind: "doubles" | "teams";
   group: GroupResolved;
   entryLabel: string;
+  standings: StandingRow[];
+  matches: MatchResolved[] | TeamMatchResolved[];
 }) {
   const c = groupColor(group.id);
-  const entryLabels = group.entries.map((e) => e.label);
-  const standings = getStandings(kind, group.id, entryLabels);
   const played = standings.some((s) => s.played > 0);
   const top1 = standings[0];
   const top2 = standings[1];
@@ -146,10 +154,10 @@ function GroupTabContent({
       </div>
 
       {/* Lịch & kết quả - accordion */}
-      <MatchesAccordion group={group} kind={kind} />
+      <MatchesAccordion group={group} kind={kind} matches={matches} />
 
       {/* BXH chi tiết - dialog */}
-      <StandingsDialog group={group} kind={kind} entries={entryLabels} />
+      <StandingsDialog group={group} kind={kind} standings={standings} />
     </div>
   );
 }
@@ -195,13 +203,12 @@ function TopEntryCard({
 function StandingsDialog({
   group,
   kind,
-  entries,
+  standings,
 }: {
   group: GroupResolved;
   kind: "doubles" | "teams";
-  entries: string[];
+  standings: StandingRow[];
 }) {
-  const standings = getStandings(kind, group.id, entries);
   const diffLabel = kind === "doubles" ? "Hiệu số ván" : "Hiệu số trận cá nhân";
 
   return (
@@ -278,14 +285,12 @@ function setsSummary(sets: SetScore[]) {
 function MatchesAccordion({
   group,
   kind,
+  matches,
 }: {
   group: GroupResolved;
   kind: "doubles" | "teams";
+  matches: MatchResolved[] | TeamMatchResolved[];
 }) {
-  const isDoubles = kind === "doubles";
-  const matches = isDoubles
-    ? MOCK_DOUBLES_MATCHES.filter((m) => m.groupId === group.id)
-    : MOCK_TEAM_MATCHES.filter((m) => m.groupId === group.id);
   const done = matches.filter((m) => m.status === "done").length;
 
   return (
@@ -301,13 +306,13 @@ function MatchesAccordion({
         <ChevronDown className="size-4 transition-transform group-open:rotate-180" />
       </summary>
       <ol className="flex flex-col gap-2 px-3 pb-3">
-        {matches.map((m, i) =>
-          isDoubles ? (
-            <DoublesMatchRow key={m.id} match={m as DoublesMatch} index={i + 1} />
-          ) : (
-            <TeamMatchRow key={m.id} match={m as TeamMatch} index={i + 1} />
-          )
-        )}
+        {kind === "doubles"
+          ? (matches as MatchResolved[]).map((m, i) => (
+              <DoublesMatchRow key={m.id} match={m} index={i + 1} />
+            ))
+          : (matches as TeamMatchResolved[]).map((m, i) => (
+              <TeamMatchRow key={m.id} match={m} index={i + 1} />
+            ))}
       </ol>
     </details>
   );
@@ -320,9 +325,9 @@ function MatchHeader({
   status,
 }: {
   index: number;
-  table?: number;
+  table?: number | null;
   bestOf?: number;
-  status: "scheduled" | "done";
+  status: "scheduled" | "done" | "forfeit" | "live";
 }) {
   return (
     <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
@@ -331,9 +336,13 @@ function MatchHeader({
         {table != null && <span>· Bàn {table}</span>}
         {bestOf && <span>· thắng {Math.ceil(bestOf / 2)}/{bestOf} ván</span>}
       </div>
-      {status === "done" ? (
+      {status === "done" || status === "forfeit" ? (
         <span className="rounded-full bg-green-500/15 px-2 py-0.5 font-medium text-green-700 dark:text-green-400">
           Đã xong
+        </span>
+      ) : status === "live" ? (
+        <span className="rounded-full bg-orange-500/15 px-2 py-0.5 font-medium text-orange-700 dark:text-orange-400">
+          Đang đấu
         </span>
       ) : (
         <span className="rounded-full bg-muted px-2 py-0.5 font-medium">Chưa đấu</span>
@@ -363,9 +372,9 @@ function ScoreCol({
   );
 }
 
-function DoublesMatchRow({ match, index }: { match: DoublesMatch; index: number }) {
+function DoublesMatchRow({ match, index }: { match: MatchResolved; index: number }) {
   const { a, b } = setsSummary(match.sets);
-  const done = match.status === "done";
+  const done = match.status === "done" || match.status === "forfeit";
   const aWon = done && a > b;
   const bWon = done && b > a;
   return (
@@ -373,8 +382,8 @@ function DoublesMatchRow({ match, index }: { match: DoublesMatch; index: number 
       <MatchHeader index={index} table={match.table} bestOf={match.bestOf} status={match.status} />
       <div className="flex items-center gap-3">
         <div className="min-w-0 flex-1 space-y-0.5 text-sm">
-          <div className={`truncate ${aWon ? "font-semibold" : ""}`}>{match.pairA}</div>
-          <div className={`truncate ${bWon ? "font-semibold" : ""}`}>{match.pairB}</div>
+          <div className={`truncate ${aWon ? "font-semibold" : ""}`}>{match.pairA.label}</div>
+          <div className={`truncate ${bWon ? "font-semibold" : ""}`}>{match.pairB.label}</div>
         </div>
         <ScoreCol done={done} scoreA={a} scoreB={b} aWon={aWon} bWon={bWon} />
       </div>
@@ -394,8 +403,8 @@ function DoublesMatchRow({ match, index }: { match: DoublesMatch; index: number 
   );
 }
 
-function TeamMatchRow({ match, index }: { match: TeamMatch; index: number }) {
-  const done = match.status === "done";
+function TeamMatchRow({ match, index }: { match: TeamMatchResolved; index: number }) {
+  const done = match.status === "done" || match.status === "forfeit";
   const aWon = done && match.scoreA > match.scoreB;
   const bWon = done && match.scoreB > match.scoreA;
   return (
@@ -403,15 +412,15 @@ function TeamMatchRow({ match, index }: { match: TeamMatch; index: number }) {
       <MatchHeader index={index} table={match.table} status={match.status} />
       <div className="flex items-center gap-3">
         <div className="min-w-0 flex-1 space-y-0.5 text-sm">
-          <div className={`truncate ${aWon ? "font-semibold" : ""}`}>{match.teamA}</div>
-          <div className={`truncate ${bWon ? "font-semibold" : ""}`}>{match.teamB}</div>
+          <div className={`truncate ${aWon ? "font-semibold" : ""}`}>{match.teamA.name}</div>
+          <div className={`truncate ${bWon ? "font-semibold" : ""}`}>{match.teamB.name}</div>
         </div>
         <ScoreCol done={done} scoreA={match.scoreA} scoreB={match.scoreB} aWon={aWon} bWon={bWon} />
       </div>
 
       <ul className="mt-2 space-y-1.5 border-t pt-2">
-        {match.individual.map((im, i) => (
-          <SubMatchRow key={im.id} match={im} lineup={TEAM_MATCH_TEMPLATE[i]} />
+        {match.individual.map((im) => (
+          <SubMatchRow key={im.id} match={im} />
         ))}
       </ul>
     </li>
@@ -420,35 +429,38 @@ function TeamMatchRow({ match, index }: { match: TeamMatch; index: number }) {
 
 function SubMatchRow({
   match,
-  lineup,
 }: {
-  match: IndividualMatch;
-  lineup: (typeof TEAM_MATCH_TEMPLATE)[number];
+  match: TeamMatchResolved["individual"][number];
 }) {
   const { a, b } = setsSummary(match.sets);
   const hasResult = match.sets.length > 0;
   const aWon = hasResult && a > b;
   const bWon = hasResult && b > a;
-  const slotHint =
-    lineup.kind === "single"
-      ? `${lineup.slot} vs ${lineup.oppSlot}`
-      : `${lineup.slots.join("+")} vs ${lineup.oppSlots.join("+")}`;
+
+  const playerLabel = (players: Array<{ id: string; name: string }>) =>
+    players.length === 0 ? null : players.map((p) => p.name).join(" – ");
+
+  const labelA = playerLabel(match.playersA);
+  const labelB = playerLabel(match.playersB);
+
   return (
     <li className="rounded-md bg-muted/40 p-2">
       <div className="mb-1 flex items-center justify-between text-xs text-muted-foreground">
         <span className="flex items-center gap-1.5">
           <span className="font-medium text-foreground">{match.label}</span>
-          <span className="rounded bg-muted px-1.5 py-0.5">{slotHint}</span>
+          <span className="rounded bg-muted px-1.5 py-0.5">
+            {match.kind === "singles" ? "Đơn" : "Đôi"}
+          </span>
         </span>
         <span>thắng {Math.ceil(match.bestOf / 2)}/{match.bestOf} ván</span>
       </div>
       <div className="flex items-center gap-2 text-sm">
         <div className="min-w-0 flex-1 space-y-0.5">
           <div className={`truncate ${aWon ? "font-semibold" : "text-muted-foreground"}`}>
-            {match.playerA === "—" ? <span className="italic">Chưa gán</span> : match.playerA}
+            {labelA ?? <span className="italic">Chưa gán</span>}
           </div>
           <div className={`truncate ${bWon ? "font-semibold" : "text-muted-foreground"}`}>
-            {match.playerB === "—" ? <span className="italic">Chưa gán</span> : match.playerB}
+            {labelB ?? <span className="italic">Chưa gán</span>}
           </div>
         </div>
         <div className="flex shrink-0 flex-col items-end text-base font-semibold tabular-nums leading-tight">
