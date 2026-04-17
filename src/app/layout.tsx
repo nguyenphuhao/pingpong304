@@ -5,6 +5,7 @@ import { BottomNav } from "./_BottomNav";
 import { OnboardingDialog } from "./_OnboardingDialog";
 import { Providers } from "./_Providers";
 import { PreferencesScript } from "./_preferences-script";
+import { FloatingChatBubble } from "@/components/chat/floating-chat-bubble";
 import "./globals.css";
 
 const fontSans = Be_Vietnam_Pro({
@@ -62,6 +63,9 @@ export default function RootLayout({
           <BottomNav />
           <Toaster position="top-center" richColors />
           <OnboardingDialog />
+          {process.env.NEXT_PUBLIC_CHAT_ENABLED === "true" ? (
+            <FloatingChatBubble />
+          ) : null}
         </Providers>
       </body>
     </html>

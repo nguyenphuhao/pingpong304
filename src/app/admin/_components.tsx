@@ -11,10 +11,12 @@ import {
   Pencil,
   Plus,
   Radio,
+  RotateCcw,
   Search,
   Trash2,
   Sparkles,
   Trophy,
+  UserX,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -1055,6 +1057,9 @@ function TeamMatchCard({
 
   const hasResult =
     status !== "scheduled" || subs.some((s) => s.sets.length > 0);
+  const hasPlayers = subs.some(
+    (s) => s.playersA.length > 0 || s.playersB.length > 0,
+  );
   const clearResult = async () => {
     if (readOnly) return;
     if (saveTimer.current) clearTimeout(saveTimer.current);
@@ -1069,6 +1074,64 @@ function TeamMatchCard({
       return;
     }
     await doSave("scheduled", null, clearedSubs);
+  };
+  const clearPlayers = async () => {
+    if (readOnly) return;
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    const clearedSubs = subsRef.current.map((s) => ({
+      ...s,
+      playersA: [],
+      playersB: [],
+    }));
+    applySubs(() => clearedSubs);
+    if (inFlight.current) {
+      changedSinceInFlight.current = true;
+      return;
+    }
+    await doSave(statusRef.current, winnerIdRef.current, clearedSubs);
+  };
+  const resetMatch = async () => {
+    if (readOnly) return;
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    const freshSubs: SubMatchResolved[] = [
+      {
+        id: `${match.id}-s1`,
+        label: "Đơn 1",
+        kind: "singles",
+        playersA: [],
+        playersB: [],
+        bestOf: 3,
+        sets: [],
+      },
+      {
+        id: `${match.id}-d`,
+        label: "Đôi",
+        kind: "doubles",
+        playersA: [],
+        playersB: [],
+        bestOf: 3,
+        sets: [],
+      },
+      {
+        id: `${match.id}-s2`,
+        label: "Đơn 2",
+        kind: "singles",
+        playersA: [],
+        playersB: [],
+        bestOf: 3,
+        sets: [],
+      },
+    ];
+    applySubs(() => freshSubs);
+    setStatus("scheduled");
+    statusRef.current = "scheduled";
+    setWinnerId(null);
+    winnerIdRef.current = null;
+    if (inFlight.current) {
+      changedSinceInFlight.current = true;
+      return;
+    }
+    await doSave("scheduled", null, freshSubs);
   };
 
   const locked = status === "done" || status === "forfeit";
@@ -1123,8 +1186,18 @@ function TeamMatchCard({
         </div>
       </div>
 
-      {!readOnly && (status === "done" || status === "forfeit" || canFinalize || hasResult) && (
+      {!readOnly && (
         <div className="mb-2 flex items-center justify-end gap-2">
+          <ResetMatchButton
+            disabled={pending}
+            onConfirm={resetMatch}
+          />
+          {hasPlayers && (
+            <ClearPlayersButton
+              disabled={pending}
+              onConfirm={clearPlayers}
+            />
+          )}
           {hasResult && (
             <ClearResultButton
               disabled={pending}
@@ -1790,6 +1863,135 @@ function ClearResultButton({
             }}
           >
             Xoá kết quả
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function ResetMatchButton({
+  disabled,
+  onConfirm,
+}: {
+  disabled?: boolean;
+  onConfirm: () => Promise<void> | void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [pending, setPending] = useState(false);
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger
+        disabled={disabled}
+        render={
+          <Button
+            size="icon"
+            variant="ghost"
+            aria-label="Reset trận"
+            title="Reset trận về nguyên mẫu"
+            className="bg-rose-500/10 hover:bg-rose-500/20 text-rose-700 dark:text-rose-400"
+            disabled={disabled}
+          />
+        }
+      >
+        <RotateCcw />
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Reset trận về nguyên mẫu?</DialogTitle>
+          <DialogDescription>
+            Trận sẽ được khôi phục về đúng 3 sub: Đơn 1, Đôi, Đơn 2.
+            Toàn bộ VĐV đã gán, kết quả các set, và sub mở rộng (nếu có)
+            sẽ bị xoá. Không thể hoàn tác.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <DialogClose
+            render={<Button variant="outline" type="button" disabled={pending} />}
+          >
+            Huỷ
+          </DialogClose>
+          <Button
+            type="button"
+            variant="destructive"
+            disabled={pending}
+            onClick={async () => {
+              setPending(true);
+              try {
+                await onConfirm();
+                setOpen(false);
+              } catch {
+                /* surfaced by caller toast */
+              } finally {
+                setPending(false);
+              }
+            }}
+          >
+            Reset
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function ClearPlayersButton({
+  disabled,
+  onConfirm,
+}: {
+  disabled?: boolean;
+  onConfirm: () => Promise<void> | void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [pending, setPending] = useState(false);
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger
+        disabled={disabled}
+        render={
+          <Button
+            size="icon"
+            variant="ghost"
+            aria-label="Xoá VĐV"
+            title="Xoá VĐV"
+            className="bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-400"
+            disabled={disabled}
+          />
+        }
+      >
+        <UserX />
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Xoá VĐV khỏi các sub?</DialogTitle>
+          <DialogDescription>
+            Tất cả VĐV ở 3 trận Đơn 1, Đôi, Đơn 2 sẽ bị bỏ gán.
+            Kết quả các set vẫn giữ nguyên. Không thể hoàn tác.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <DialogClose
+            render={<Button variant="outline" type="button" disabled={pending} />}
+          >
+            Huỷ
+          </DialogClose>
+          <Button
+            type="button"
+            variant="destructive"
+            disabled={pending}
+            onClick={async () => {
+              setPending(true);
+              try {
+                await onConfirm();
+                setOpen(false);
+              } catch {
+                /* surfaced by caller toast */
+              } finally {
+                setPending(false);
+              }
+            }}
+          >
+            Xoá VĐV
           </Button>
         </DialogFooter>
       </DialogContent>
