@@ -66,7 +66,7 @@ import { PlayersSection } from "./_players-section";
 import { PairsSection } from "./_pairs-section";
 import { TeamsSection } from "./_teams-section";
 import { GroupsSection } from "./_groups-section";
-import { AiSingleMatchButton } from "./_ai-chat-modal";
+import { AiSingleMatchButton, AiBatchGroupButton } from "./_ai-chat-modal";
 
 const DEFAULT_TAB = "players";
 const TAB_VALUES = ["players", "entries", "groups", "ko"] as const;
@@ -370,6 +370,32 @@ export function DoublesSchedule({
 
       <StandingsCard rows={standings} diffLabel="Hiệu số ván" />
 
+      {!readOnly && (
+        <AiBatchGroupButton
+          groupContext={{
+            type: "doubles",
+            matches: matches.map((m) => ({
+              id: m.id,
+              sideA: m.pairA.label,
+              sideB: m.pairB.label,
+              bestOf: m.bestOf,
+              hasResult: m.sets.length > 0,
+            })),
+          }}
+          onApply={async (results) => {
+            for (const r of results) {
+              try {
+                const updated = await patchDoublesMatch(r.matchId, { sets: r.sets });
+                handleMatchUpdated(updated);
+              } catch (err) {
+                toast.error(`Lỗi cập nhật trận: ${err instanceof Error ? err.message : "Unknown"}`);
+              }
+            }
+            toast.success(`Đã cập nhật ${results.length} trận`);
+          }}
+        />
+      )}
+
       <MatchScheduleSection
         title="Lịch thi đấu vòng bảng"
         subtitle={`${matches.length} trận · vòng tròn`}
@@ -618,6 +644,51 @@ export function TeamSchedule({
       </Card>
 
       <StandingsCard rows={standings} diffLabel="Hiệu số trận cá nhân" />
+
+      {!readOnly && (
+        <AiBatchGroupButton
+          groupContext={{
+            type: "team",
+            matches: matches.map((m) => ({
+              id: m.id,
+              sideA: m.teamA.name,
+              sideB: m.teamB.name,
+              bestOf: 3,
+              hasResult: m.individual.some((s) => s.sets.length > 0),
+              subMatches: m.individual.map((s) => ({
+                label: s.label,
+                kind: s.kind,
+                bestOf: s.bestOf,
+              })),
+            })),
+          }}
+          onApply={async (results) => {
+            for (const r of results) {
+              try {
+                const existing = matches.find((m) => m.id === r.matchId);
+                if (!existing) continue;
+                const updatedSubs = existing.individual.map((sub) => {
+                  const aiSub = r.subMatches?.find((s) => s.label === sub.label);
+                  return {
+                    id: sub.id,
+                    label: sub.label,
+                    kind: sub.kind,
+                    playersA: sub.playersA.map((p) => p.id),
+                    playersB: sub.playersB.map((p) => p.id),
+                    bestOf: sub.bestOf,
+                    sets: aiSub ? aiSub.sets : sub.sets,
+                  };
+                });
+                const updated = await patchTeamMatch(r.matchId, { individual: updatedSubs });
+                handleMatchUpdated(updated);
+              } catch (err) {
+                toast.error(`Lỗi cập nhật trận: ${err instanceof Error ? err.message : "Unknown"}`);
+              }
+            }
+            toast.success(`Đã cập nhật ${results.length} trận`);
+          }}
+        />
+      )}
 
       <MatchScheduleSection
         title="Lịch thi đấu vòng bảng"
