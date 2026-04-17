@@ -85,6 +85,7 @@ export async function POST(req: Request) {
     providerOptions: {
       gateway: { tags: ["feature:chat"] },
     },
+    experimental_telemetry: { isEnabled: true, functionId: "chat" },
   });
 
   return result.toUIMessageStreamResponse();
