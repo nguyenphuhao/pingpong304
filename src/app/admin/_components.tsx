@@ -2199,25 +2199,49 @@ function KoMatchCard({
       {isDoubles && (
         <div className="mt-2 flex items-center justify-between gap-2">
           <SetScores sets={match.sets} />
-          <KoSetsEditor
-            matchId={match.id}
-            kind={kind}
-            sets={match.sets}
-            bestOf={match.bestOf}
-            disabled={done || placeholderA || placeholderB}
-            nameA={nameA}
-            nameB={nameB}
-            onSaved={() => router.refresh()}
-          />
+          <div className="flex shrink-0 items-center gap-1">
+            <KoSetsEditor
+              matchId={match.id}
+              kind={kind}
+              sets={match.sets}
+              bestOf={match.bestOf}
+              disabled={done || placeholderA || placeholderB}
+              nameA={nameA}
+              nameB={nameB}
+              onSaved={() => router.refresh()}
+            />
+            <LiveToggleButton
+              live={match.status === "live"}
+              disabled={placeholderA || placeholderB}
+              onToggle={() => save({ status: match.status === "live" ? "scheduled" : "live" })}
+            />
+            <LockToggleButton
+              locked={done}
+              disabled={placeholderA || placeholderB}
+              onToggle={() => save({ status: done ? "scheduled" : "done" })}
+            />
+          </div>
         </div>
       )}
 
       {!isDoubles && (match as TeamKoResolved).entryA && (match as TeamKoResolved).entryB && (
-        <TeamKoSubMatches
-          match={match as TeamKoResolved}
-          teams={teams}
-          onSaved={() => router.refresh()}
-        />
+        <>
+          <TeamKoSubMatches
+            match={match as TeamKoResolved}
+            teams={teams}
+            onSaved={() => router.refresh()}
+          />
+          <div className="mt-2 flex items-center justify-end gap-1">
+            <LiveToggleButton
+              live={match.status === "live"}
+              onToggle={() => save({ status: match.status === "live" ? "scheduled" : "live" })}
+            />
+            <LockToggleButton
+              locked={done}
+              onToggle={() => save({ status: done ? "scheduled" : "done" })}
+            />
+          </div>
+        </>
       )}
     </Card>
   );
