@@ -52,6 +52,22 @@ export async function patchTeamMatch(
   return json.data;
 }
 
+/** Auto-reseed KO bracket if no KO match has started yet. */
+export async function tryAutoReseedKo(kind: "doubles" | "teams"): Promise<void> {
+  const base = kind === "doubles" ? "doubles" : "teams";
+  // Fetch current bracket
+  const res = await fetch(`/api/${base}/ko`);
+  if (!res.ok) return;
+  const json = await res.json();
+  const matches = json.data as Array<{ status: string }> | null;
+  if (!matches || matches.length === 0) return;
+  // If any match is live, done, or forfeit → don't reseed
+  if (matches.some((m) => m.status !== "scheduled")) return;
+  // All scheduled → safe to reseed
+  await fetch(`/api/${base}/ko`, { method: "DELETE" });
+  await fetch(`/api/${base}/ko/seed`, { method: "POST" });
+}
+
 export type RegenerateSummary = { kept: number; deleted: number; added: number };
 
 export async function regenerateMatches(
