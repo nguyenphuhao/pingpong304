@@ -206,7 +206,6 @@ export function AiSingleMatchButton({
             ref={fileRef}
             type="file"
             accept="image/*"
-            capture="environment"
             className="hidden"
             onChange={handleImageSelect}
           />
@@ -576,7 +575,6 @@ export function AiBatchGroupButton({
             ref={fileRef}
             type="file"
             accept="image/*"
-            capture="environment"
             className="hidden"
             onChange={handleImageSelect}
           />
