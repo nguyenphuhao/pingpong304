@@ -66,6 +66,7 @@ import { PlayersSection } from "./_players-section";
 import { PairsSection } from "./_pairs-section";
 import { TeamsSection } from "./_teams-section";
 import { GroupsSection } from "./_groups-section";
+import { AiSingleMatchButton } from "./_ai-chat-modal";
 
 const DEFAULT_TAB = "players";
 const TAB_VALUES = ["players", "entries", "groups", "ko"] as const;
@@ -525,6 +526,17 @@ function DoublesMatchCard({
               disabled={pending}
               onSave={save}
             />
+            <AiSingleMatchButton
+              matchContext={{
+                id: match.id,
+                type: "doubles",
+                bestOf: match.bestOf,
+                sideA: match.pairA.label,
+                sideB: match.pairB.label,
+              }}
+              onApply={(sets) => save({ sets })}
+              disabled={pending}
+            />
             {(match.sets.length > 0 || status !== "scheduled") && (
               <ClearResultButton
                 disabled={pending}
@@ -909,6 +921,35 @@ function TeamMatchCard({
           {!readOnly && <SaveIndicator state={saveState} error={saveError} />}
         </div>
         <div className="flex items-center gap-2">
+          {!readOnly && (
+            <AiSingleMatchButton
+              matchContext={{
+                id: match.id,
+                type: "team",
+                bestOf: 3,
+                sideA: match.teamA.name,
+                sideB: match.teamB.name,
+                subMatches: match.individual.map((s) => ({
+                  label: s.label,
+                  kind: s.kind,
+                  bestOf: s.bestOf,
+                })),
+              }}
+              onApply={(_sets, subMatches) => {
+                if (subMatches) {
+                  applySubs((prev) =>
+                    prev.map((existing) => {
+                      const aiSub = subMatches.find((s) => s.label === existing.label);
+                      if (!aiSub) return existing;
+                      return { ...existing, sets: aiSub.sets };
+                    }),
+                  );
+                  scheduleSave();
+                }
+              }}
+              disabled={pending}
+            />
+          )}
           {!readOnly && (
             <LiveToggleButton
               live={live}
