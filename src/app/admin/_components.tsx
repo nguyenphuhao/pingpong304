@@ -257,6 +257,43 @@ function RankBadge({ rank }: { rank: number; active: boolean }) {
   );
 }
 
+function markdownToHtml(md: string): string {
+  return md
+    .split("\n\n")
+    .map((block) => {
+      block = block.trim();
+      if (!block) return "";
+      // Headers
+      if (block.startsWith("### ")) return `<h3>${esc(block.slice(4))}</h3>`;
+      if (block.startsWith("## ")) return `<h2>${esc(block.slice(3))}</h2>`;
+      if (block.startsWith("# ")) return `<h1>${esc(block.slice(2))}</h1>`;
+      // Bullet list
+      const lines = block.split("\n");
+      if (lines.every((l) => /^[-*] /.test(l))) {
+        const items = lines.map((l) => `<li>${inlineFmt(l.replace(/^[-*] /, ""))}</li>`).join("");
+        return `<ul>${items}</ul>`;
+      }
+      // Numbered list
+      if (lines.every((l) => /^\d+\. /.test(l))) {
+        const items = lines.map((l) => `<li>${inlineFmt(l.replace(/^\d+\. /, ""))}</li>`).join("");
+        return `<ol>${items}</ol>`;
+      }
+      // Paragraph
+      return `<p>${inlineFmt(block.replace(/\n/g, "<br/>"))}</p>`;
+    })
+    .join("");
+}
+
+function esc(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+function inlineFmt(s: string): string {
+  return esc(s)
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*(.+?)\*/g, "<em>$1</em>");
+}
+
 function ExplainStandingsButton({
   rows,
   kind,
@@ -325,9 +362,10 @@ function ExplainStandingsButton({
             </div>
           )}
           {explanation && (
-            <div className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap text-sm">
-              {explanation}
-            </div>
+            <div
+              className="prose prose-sm dark:prose-invert max-w-none text-sm [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4"
+              dangerouslySetInnerHTML={{ __html: markdownToHtml(explanation) }}
+            />
           )}
         </div>
       </DialogContent>
