@@ -41,7 +41,7 @@ export async function POST() {
       }
     }
 
-    const bracket = buildDoublesBracket(seeds);
+    const bracket = buildDoublesBracket(seeds, groups.map((g) => g.name));
 
     const { error: insertErr } = await supabaseServer
       .from("doubles_ko")

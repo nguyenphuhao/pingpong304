@@ -41,7 +41,7 @@ export async function POST() {
       }
     }
 
-    const bracket = buildTeamBracket(seeds);
+    const bracket = buildTeamBracket(seeds, groups.map((g) => g.name));
 
     const { error: insertErr } = await supabaseServer
       .from("team_ko")

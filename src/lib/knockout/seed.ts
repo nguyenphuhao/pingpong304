@@ -40,8 +40,8 @@ function findEntry(seeds: SeedEntry[], group: string, rank: number): string | nu
   return seeds.find((s) => s.groupName === group && s.rank === rank)?.entryId ?? null;
 }
 
-export function buildDoublesBracket(seeds: SeedEntry[]): DoublesKoInsert[] {
-  const groups = [...new Set(seeds.map((s) => s.groupName))].sort();
+export function buildDoublesBracket(seeds: SeedEntry[], groupNames: string[]): DoublesKoInsert[] {
+  const groups = [...groupNames].sort();
   const [A, B, C, D] = groups;
 
   return [
@@ -98,8 +98,8 @@ function teamSubMatches(matchId: string): TeamKoInsert["individual"] {
   ];
 }
 
-export function buildTeamBracket(seeds: SeedEntry[]): TeamKoInsert[] {
-  const groups = [...new Set(seeds.map((s) => s.groupName))].sort();
+export function buildTeamBracket(seeds: SeedEntry[], groupNames: string[]): TeamKoInsert[] {
+  const groups = [...groupNames].sort();
   const [A, B] = groups;
 
   return [
