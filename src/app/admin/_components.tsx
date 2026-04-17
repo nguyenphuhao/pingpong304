@@ -58,7 +58,7 @@ import type {
   SetScore,
   BestOf,
 } from "@/lib/schemas/match";
-import { patchDoublesMatch, patchTeamMatch } from "./_match-actions";
+import { patchDoublesMatch, patchTeamMatch, tryAutoReseedKo } from "./_match-actions";
 import { deriveTeamScore, deriveTeamWinner } from "@/lib/matches/derive";
 import { toast } from "sonner";
 import { nanoid } from "nanoid";
@@ -336,6 +336,7 @@ export function DoublesSchedule({
   const [matches, setMatches] = useState(initialMatches);
   const handleMatchUpdated = (updated: MatchResolved) => {
     setMatches((prev) => prev.map((m) => (m.id === updated.id ? updated : m)));
+    tryAutoReseedKo("doubles").catch(() => {});
   };
   const standings = computeDoublesStandings(entries, matches);
   const color = groupColor(groupId);
@@ -574,6 +575,7 @@ export function TeamSchedule({
   const [matches, setMatches] = useState(initialMatches);
   const handleMatchUpdated = (updated: TeamMatchResolved) => {
     setMatches((prev) => prev.map((m) => (m.id === updated.id ? updated : m)));
+    tryAutoReseedKo("teams").catch(() => {});
   };
   const standings = computeTeamStandings(entries, matches);
   const color = groupColor(groupId);
