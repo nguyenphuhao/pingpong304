@@ -28,6 +28,7 @@ export function makeSupabaseChain<T = unknown>(result: SupabaseResult<T>) {
   chain.neq = vi.fn(chainable);
   chain.in = vi.fn(chainable);
   chain.or = vi.fn(chainable);
+  chain.ilike = vi.fn(chainable);
   chain.like = vi.fn(chainable);
   chain.contains = vi.fn(chainable);
   chain.limit = vi.fn(chainable);

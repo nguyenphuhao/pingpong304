@@ -11,6 +11,10 @@ import {
   fetchDoublesMatchById,
   fetchTeamMatchesByGroup,
   fetchTeamMatchById,
+  fetchLiveDoubles,
+  fetchLiveTeams,
+  fetchRecentDoubles,
+  fetchRecentTeams,
 } from "./matches";
 
 beforeEach(() => {
@@ -223,5 +227,64 @@ describe("fetchTeamMatchById", () => {
     vi.mocked(supabaseServer.from).mockReturnValueOnce(chain as never);
     const r = await fetchTeamMatchById("tm99");
     expect(r).toBeNull();
+  });
+});
+
+describe("fetchLiveDoubles", () => {
+  test("returns only live matches", async () => {
+    const matchChain = makeSupabaseChain({
+      data: [
+        {
+          id: "dm05", group_id: "gA", pair_a: "p01", pair_b: "p02",
+          table: 3, best_of: 3, sets: [{ a: 11, b: 8 }],
+          status: "live", winner: null, sets_a: 1, sets_b: 0,
+        },
+      ],
+      error: null,
+    });
+    const pairsChain = makeSupabaseChain({
+      data: [
+        { id: "p01", p1: { id: "d01", name: "A" }, p2: { id: "d02", name: "B" } },
+        { id: "p02", p1: { id: "d03", name: "C" }, p2: { id: "d04", name: "D" } },
+      ],
+      error: null,
+    });
+    vi.mocked(supabaseServer.from)
+      .mockReturnValueOnce(matchChain as never)
+      .mockReturnValueOnce(pairsChain as never);
+
+    const r = await fetchLiveDoubles();
+    expect(r).toHaveLength(1);
+    expect(r[0].status).toBe("live");
+    expect(r[0].pairA.label).toBe("A – B");
+  });
+});
+
+describe("fetchRecentDoubles", () => {
+  test("returns done matches with limit", async () => {
+    const matchChain = makeSupabaseChain({
+      data: [
+        {
+          id: "dm01", group_id: "gA", pair_a: "p01", pair_b: "p02",
+          table: null, best_of: 3, sets: [{ a: 11, b: 8 }, { a: 11, b: 7 }],
+          status: "done", winner: "p01", sets_a: 2, sets_b: 0,
+        },
+      ],
+      error: null,
+    });
+    const pairsChain = makeSupabaseChain({
+      data: [
+        { id: "p01", p1: { id: "d01", name: "A" }, p2: { id: "d02", name: "B" } },
+        { id: "p02", p1: { id: "d03", name: "C" }, p2: { id: "d04", name: "D" } },
+      ],
+      error: null,
+    });
+    vi.mocked(supabaseServer.from)
+      .mockReturnValueOnce(matchChain as never)
+      .mockReturnValueOnce(pairsChain as never);
+
+    const r = await fetchRecentDoubles(5);
+    expect(r).toHaveLength(1);
+    expect(r[0].status).toBe("done");
   });
 });

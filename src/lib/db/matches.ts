@@ -208,3 +208,97 @@ export async function fetchTeamMatchById(
   ]);
   return resolveTeamMatch(data, teamMap, playerMap);
 }
+
+// ── Live matches ──
+
+export async function fetchLiveDoubles(): Promise<MatchResolved[]> {
+  const { data, error } = await supabaseServer
+    .from("doubles_matches")
+    .select(DOUBLES_SELECT)
+    .eq("status", "live")
+    .order("id");
+  if (error) throw new Error(error.message);
+  const pairMap = await buildPairLabelMap();
+  return ((data ?? []) as DoublesMatchRow[]).map((r) =>
+    resolveDoublesMatch(r, pairMap),
+  );
+}
+
+export async function fetchLiveTeams(): Promise<TeamMatchResolved[]> {
+  const { data, error } = await supabaseServer
+    .from("team_matches")
+    .select(TEAMS_SELECT)
+    .eq("status", "live")
+    .order("id");
+  if (error) throw new Error(error.message);
+  const [teamMap, playerMap] = await Promise.all([
+    buildTeamNameMap(),
+    buildTeamPlayerNameMap(),
+  ]);
+  return ((data ?? []) as TeamMatchRow[]).map((r) =>
+    resolveTeamMatch(r, teamMap, playerMap),
+  );
+}
+
+// ── Recent results ──
+
+export async function fetchRecentDoubles(
+  limit: number,
+): Promise<MatchResolved[]> {
+  const { data, error } = await supabaseServer
+    .from("doubles_matches")
+    .select(DOUBLES_SELECT)
+    .in("status", ["done", "forfeit"])
+    .order("updated_at", { ascending: false })
+    .limit(limit);
+  if (error) throw new Error(error.message);
+  const pairMap = await buildPairLabelMap();
+  return ((data ?? []) as DoublesMatchRow[]).map((r) =>
+    resolveDoublesMatch(r, pairMap),
+  );
+}
+
+export async function fetchRecentTeams(
+  limit: number,
+): Promise<TeamMatchResolved[]> {
+  const { data, error } = await supabaseServer
+    .from("team_matches")
+    .select(TEAMS_SELECT)
+    .in("status", ["done", "forfeit"])
+    .order("updated_at", { ascending: false })
+    .limit(limit);
+  if (error) throw new Error(error.message);
+  const [teamMap, playerMap] = await Promise.all([
+    buildTeamNameMap(),
+    buildTeamPlayerNameMap(),
+  ]);
+  return ((data ?? []) as TeamMatchRow[]).map((r) =>
+    resolveTeamMatch(r, teamMap, playerMap),
+  );
+}
+
+// ── All matches by group (for schedule lists) ──
+
+export async function fetchAllDoublesMatchesByGroup(
+  groupIds: string[],
+): Promise<Map<string, MatchResolved[]>> {
+  const results = await Promise.all(
+    groupIds.map(async (gid) => {
+      const matches = await fetchDoublesMatchesByGroup(gid);
+      return [gid, matches] as const;
+    }),
+  );
+  return new Map(results);
+}
+
+export async function fetchAllTeamMatchesByGroup(
+  groupIds: string[],
+): Promise<Map<string, TeamMatchResolved[]>> {
+  const results = await Promise.all(
+    groupIds.map(async (gid) => {
+      const matches = await fetchTeamMatchesByGroup(gid);
+      return [gid, matches] as const;
+    }),
+  );
+  return new Map(results);
+}
