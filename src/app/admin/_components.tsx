@@ -1393,6 +1393,13 @@ function SubSetsEditor({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Sửa tỉ số · {sub.label}</DialogTitle>
+          {(sub.playersA.length > 0 || sub.playersB.length > 0) && (
+            <p className="text-sm font-medium text-foreground">
+              {sub.playersA.map((p) => p.name).join(" / ") || "—"}
+              {" vs "}
+              {sub.playersB.map((p) => p.name).join(" / ") || "—"}
+            </p>
+          )}
           <DialogDescription>
             Thắng {Math.ceil(sub.bestOf / 2)}/{sub.bestOf} ván · nhập tỉ số từng ván.
           </DialogDescription>
