@@ -164,7 +164,7 @@ export function AiSingleMatchButton({
                 </div>
               ) : (
                 <div className="flex flex-col items-start gap-1">
-                  <AiResponseDisplay response={msg.response} />
+                  <AiResponseDisplay response={msg.response} sideA={matchContext.sideA} sideB={matchContext.sideB} />
                 </div>
               )}
             </div>
@@ -257,10 +257,14 @@ export function AiSingleMatchButton({
 
 export function AiResponseDisplay({
   response,
+  sideA,
+  sideB,
   selected,
   onToggle,
 }: {
   response: AiParseResponse;
+  sideA?: string;
+  sideB?: string;
   selected?: Set<string>;
   onToggle?: (matchId: string) => void;
 }) {
@@ -276,21 +280,48 @@ export function AiResponseDisplay({
   }
 
   if (response.mode === "single") {
+    const sets = response.result.sets;
+    let winsA = 0;
+    let winsB = 0;
+    for (const s of sets) {
+      if (s.a > s.b) winsA++;
+      else if (s.b > s.a) winsB++;
+    }
+    const nameA = sideA ?? "A";
+    const nameB = sideB ?? "B";
+    const winner = winsA > winsB ? nameA : winsB > winsA ? nameB : null;
+
     return (
       <div className="rounded-lg border bg-muted/50 px-3 py-2 text-sm">
-        <p className="mb-1 font-medium">Kết quả:</p>
-        <div className="space-y-0.5 tabular-nums">
-          {response.result.sets.map((s, i) => (
-            <div key={i} className="flex gap-2">
-              <span className="text-muted-foreground">Set {i + 1}:</span>
-              <span className="font-semibold">
-                {s.a} – {s.b}
+        <p className="mb-2 font-semibold">{nameA} vs {nameB}</p>
+        <div className="space-y-1 tabular-nums">
+          {sets.map((s, i) => {
+            const aWon = s.a > s.b;
+            return (
+              <div key={i} className="flex items-center gap-2">
+                <span className="w-12 text-muted-foreground">Set {i + 1}:</span>
+                <span className={aWon ? "font-bold" : "text-muted-foreground"}>{s.a}</span>
+                <span className="text-muted-foreground">–</span>
+                <span className={!aWon ? "font-bold" : "text-muted-foreground"}>{s.b}</span>
+                <span className="text-xs text-muted-foreground">
+                  ({aWon ? nameA : nameB})
+                </span>
+              </div>
+            );
+          })}
+        </div>
+        <div className="mt-2 border-t pt-2">
+          <p className="font-semibold">
+            Chung cuộc: {winsA} – {winsB}
+            {winner && (
+              <span className="ml-1 text-green-600 dark:text-green-400">
+                → {winner} thắng
               </span>
-            </div>
-          ))}
+            )}
+          </p>
         </div>
         {response.result.subMatches && (
-          <div className="mt-2 space-y-1.5">
+          <div className="mt-2 space-y-1.5 border-t pt-2">
             {response.result.subMatches.map((sub, i) => (
               <div key={i}>
                 <p className="font-medium">{sub.label}:</p>
