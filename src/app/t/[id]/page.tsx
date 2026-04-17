@@ -1,8 +1,9 @@
 import { notFound } from "next/navigation";
 import { PublicHeader } from "../../_public";
 import { TeamSchedule } from "../../admin/_components";
-import { MOCK_TEAM_MATCHES } from "../../admin/_mock";
 import { fetchTeamGroupById } from "@/lib/db/groups";
+import { fetchTeamMatchesByGroup } from "@/lib/db/matches";
+import { fetchTeams } from "@/lib/db/teams";
 
 export const dynamic = "force-dynamic";
 
@@ -12,9 +13,14 @@ export default async function PublicTeamGroupPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const group = await fetchTeamGroupById(id);
+  const [group, matches, allTeams] = await Promise.all([
+    fetchTeamGroupById(id),
+    fetchTeamMatchesByGroup(id),
+    fetchTeams(),
+  ]);
   if (!group) notFound();
-  const matches = MOCK_TEAM_MATCHES.filter((m) => m.groupId === id);
+  const teamPlayersByTeamId: Record<string, Array<{ id: string; name: string }>> = {};
+  for (const t of allTeams) teamPlayersByTeamId[t.id] = t.members;
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col gap-5 p-4">
@@ -24,6 +30,7 @@ export default async function PublicTeamGroupPage({
         groupName={group.name}
         entries={group.entries.map((e) => e.label)}
         matches={matches}
+        teamPlayersByTeamId={teamPlayersByTeamId}
         readOnly
       />
     </main>

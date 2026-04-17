@@ -3,8 +3,9 @@ import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DoublesSchedule } from "../../../_components";
-import { MOCK_DOUBLES_MATCHES } from "../../../_mock";
+import { GroupRegenerateButton } from "../../../_group-regenerate-button";
 import { fetchDoublesGroupById } from "@/lib/db/groups";
+import { fetchDoublesMatchesByGroup } from "@/lib/db/matches";
 
 export const dynamic = "force-dynamic";
 
@@ -14,10 +15,11 @@ export default async function DoublesGroupDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const group = await fetchDoublesGroupById(id);
+  const [group, matches] = await Promise.all([
+    fetchDoublesGroupById(id),
+    fetchDoublesMatchesByGroup(id),
+  ]);
   if (!group) notFound();
-
-  const matches = MOCK_DOUBLES_MATCHES.filter((m) => m.groupId === id);
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col gap-5 p-4">
@@ -31,10 +33,15 @@ export default async function DoublesGroupDetailPage({
         >
           <ArrowLeft />
         </Button>
-        <div>
+        <div className="flex-1">
           <h1 className="text-xl font-semibold">{group.name}</h1>
           <p className="text-sm text-muted-foreground">Nội dung Đôi · vòng bảng</p>
         </div>
+        <GroupRegenerateButton
+          kind="doubles"
+          groupId={group.id}
+          groupName={group.name}
+        />
       </header>
 
       <DoublesSchedule

@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
 import { PublicHeader } from "../../_public";
 import { DoublesSchedule } from "../../admin/_components";
-import { MOCK_DOUBLES_MATCHES } from "../../admin/_mock";
 import { fetchDoublesGroupById } from "@/lib/db/groups";
+import { fetchDoublesMatchesByGroup } from "@/lib/db/matches";
 
 export const dynamic = "force-dynamic";
 
@@ -12,9 +12,11 @@ export default async function PublicDoublesGroupPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const group = await fetchDoublesGroupById(id);
+  const [group, matches] = await Promise.all([
+    fetchDoublesGroupById(id),
+    fetchDoublesMatchesByGroup(id),
+  ]);
   if (!group) notFound();
-  const matches = MOCK_DOUBLES_MATCHES.filter((m) => m.groupId === id);
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col gap-5 p-4">

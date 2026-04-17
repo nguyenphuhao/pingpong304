@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   CheckCircle2,
   ChevronRight,
@@ -10,6 +10,7 @@ import {
   LockOpen,
   Pencil,
   Plus,
+  Radio,
   Trash2,
   Trophy,
 } from "lucide-react";
@@ -31,21 +32,31 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type {
   Content,
-  DoublesMatch,
   IndividualMatch,
   KnockoutMatch,
   MatchStatus,
   OppSlot,
   Player,
-  SetScore,
   Team,
-  TeamMatch,
   TeamSlot,
 } from "./_mock";
 import { MOCK_TEAMS, ROUND_LABEL, TEAM_MATCH_TEMPLATE } from "./_mock";
 import type { PairWithNames } from "@/lib/schemas/pair";
 import type { TeamWithNames } from "@/lib/schemas/team";
 import type { GroupResolved } from "@/lib/schemas/group";
+import type {
+  MatchResolved,
+  TeamMatchResolved,
+  SubMatchResolved,
+  Status,
+  SetScore,
+  BestOf,
+} from "@/lib/schemas/match";
+import { patchDoublesMatch, patchTeamMatch } from "./_match-actions";
+import { deriveTeamScore, deriveTeamWinner } from "@/lib/matches/derive";
+import { toast } from "sonner";
+import { nanoid } from "nanoid";
+import { PlayerPicker } from "./_player-picker";
 import { groupColor } from "../_groupColors";
 import { PlayersSection } from "./_players-section";
 import { PairsSection } from "./_pairs-section";
@@ -157,15 +168,47 @@ export function SectionHeader({
 
 /* ---------- Schedule ---------- */
 
-const STATUS_META: Record<MatchStatus, { label: string; className: string }> = {
+const STATUS_META: Record<Status, { label: string; className: string }> = {
   scheduled: { label: "Chưa đấu", className: "bg-muted text-muted-foreground" },
+  live: { label: "Đang đấu", className: "bg-red-500/15 text-red-600 dark:text-red-400 animate-pulse" },
   done: { label: "Đã xong", className: "bg-green-500/15 text-green-700 dark:text-green-400" },
+  forfeit: { label: "Bỏ cuộc", className: "bg-amber-500/15 text-amber-700 dark:text-amber-400" },
 };
 
-function StatusBadge({ status }: { status: MatchStatus }) {
+function StatusBadge({ status }: { status: Status }) {
   const meta = STATUS_META[status];
   return (
     <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-sm font-medium ${meta.className}`}>
+      {meta.label}
+    </span>
+  );
+}
+
+type SaveState = "idle" | "pending" | "saving" | "saved" | "error";
+
+function SaveIndicator({ state, error }: { state: SaveState; error: string | null }) {
+  if (state === "idle") return null;
+  const map: Record<Exclude<SaveState, "idle">, { label: string; className: string }> = {
+    pending: {
+      label: "● Chưa lưu",
+      className: "bg-amber-500/15 text-amber-700 dark:text-amber-400",
+    },
+    saving: {
+      label: "Đang lưu...",
+      className: "bg-blue-500/15 text-blue-700 dark:text-blue-400",
+    },
+    saved: {
+      label: "✓ Đã lưu",
+      className: "bg-green-500/15 text-green-700 dark:text-green-400",
+    },
+    error: {
+      label: error ? `✕ ${error}` : "✕ Lỗi",
+      className: "bg-destructive/15 text-destructive",
+    },
+  };
+  const meta = map[state];
+  return (
+    <span className={`inline-flex max-w-[14rem] items-center truncate rounded-full px-1.5 py-0.5 text-xs ${meta.className}`}>
       {meta.label}
     </span>
   );
@@ -208,9 +251,62 @@ type StandingRow = {
   points: number;
 };
 
+type LegacyDoublesMatch = {
+  id: string;
+  groupId: string;
+  pairA: string;
+  pairB: string;
+  bestOf: BestOf;
+  sets: SetScore[];
+  status: "scheduled" | "done";
+  table?: number;
+};
+
+type LegacyTeamMatch = {
+  id: string;
+  groupId: string;
+  teamA: string;
+  teamB: string;
+  scoreA: number;
+  scoreB: number;
+  status: "scheduled" | "done";
+  table?: number;
+};
+
+function resolvedToLegacyStatus(s: Status): "scheduled" | "done" {
+  if (s === "done" || s === "forfeit") return "done";
+  return "scheduled";
+}
+
+function resolvedToLegacyDoublesMatch(m: MatchResolved): LegacyDoublesMatch {
+  return {
+    id: m.id,
+    groupId: m.groupId,
+    pairA: m.pairA.label,
+    pairB: m.pairB.label,
+    bestOf: m.bestOf,
+    sets: m.sets,
+    status: resolvedToLegacyStatus(m.status),
+    table: m.table ?? undefined,
+  };
+}
+
+function resolvedToLegacyTeamMatch(m: TeamMatchResolved): LegacyTeamMatch {
+  return {
+    id: m.id,
+    groupId: m.groupId,
+    teamA: m.teamA.name,
+    teamB: m.teamB.name,
+    scoreA: m.scoreA,
+    scoreB: m.scoreB,
+    status: resolvedToLegacyStatus(m.status),
+    table: m.table ?? undefined,
+  };
+}
+
 function computeDoublesStandings(
   entries: string[],
-  matches: DoublesMatch[]
+  matches: LegacyDoublesMatch[]
 ): StandingRow[] {
   const rows = new Map<string, StandingRow>(
     entries.map((e) => [e, { entry: e, played: 0, won: 0, lost: 0, diff: 0, points: 0 }])
@@ -242,7 +338,7 @@ function computeDoublesStandings(
 
 function computeTeamStandings(
   entries: string[],
-  matches: TeamMatch[]
+  matches: LegacyTeamMatch[]
 ): StandingRow[] {
   const rows = new Map<string, StandingRow>(
     entries.map((e) => [e, { entry: e, played: 0, won: 0, lost: 0, diff: 0, points: 0 }])
@@ -352,10 +448,13 @@ export function DoublesSchedule({
   groupId: string;
   groupName: string;
   entries: string[];
-  matches: DoublesMatch[];
+  matches: MatchResolved[];
   readOnly?: boolean;
 }) {
-  const standings = computeDoublesStandings(entries, matches);
+  const standings = computeDoublesStandings(
+    entries,
+    matches.map(resolvedToLegacyDoublesMatch)
+  );
   const color = groupColor(groupId);
   return (
     <div className="flex flex-col gap-4">
@@ -411,21 +510,50 @@ export function DoublesSchedule({
 }
 
 function DoublesMatchCard({
-  match,
+  match: initialMatch,
   index,
   readOnly,
   altBg = "",
 }: {
-  match: DoublesMatch;
+  match: MatchResolved;
   index: number;
   readOnly?: boolean;
   altBg?: string;
 }) {
-  const [status, setStatus] = useState<MatchStatus>(match.status);
-  const locked = status === "done";
+  const [match, setMatch] = useState<MatchResolved>(initialMatch);
+  const [pending, setPending] = useState(false);
+  const status = match.status;
+  const locked = status === "done" || status === "forfeit";
+  const live = status === "live";
   const { a, b } = setsSummary(match.sets);
-  const aWon = locked && a > b;
-  const bWon = locked && b > a;
+  const aWon = locked && (status === "forfeit"
+    ? match.winner?.id === match.pairA.id
+    : a > b);
+  const bWon = locked && (status === "forfeit"
+    ? match.winner?.id === match.pairB.id
+    : b > a);
+
+  const save = async (body: {
+    sets?: SetScore[];
+    status?: Status;
+    winner?: string | null;
+  }) => {
+    if (readOnly) return false;
+    const prev = match;
+    setPending(true);
+    try {
+      const updated = await patchDoublesMatch(match.id, body);
+      setMatch(updated);
+      toast.success("Đã lưu");
+      return true;
+    } catch (e) {
+      setMatch(prev);
+      toast.error(e instanceof Error ? e.message : "Lỗi");
+      return false;
+    } finally {
+      setPending(false);
+    }
+  };
 
   return (
     <Card className={`p-3 ${altBg}`}>
@@ -440,8 +568,8 @@ function DoublesMatchCard({
 
       <div className="flex items-center gap-3">
         <div className="min-w-0 flex-1 space-y-0.5 text-sm">
-          <div className={`truncate ${aWon ? "font-semibold" : ""}`}>{match.pairA}</div>
-          <div className={`truncate ${bWon ? "font-semibold" : ""}`}>{match.pairB}</div>
+          <div className={`truncate ${aWon ? "font-semibold" : ""}`}>{match.pairA.label}</div>
+          <div className={`truncate ${bWon ? "font-semibold" : ""}`}>{match.pairB.label}</div>
         </div>
         <div className="flex shrink-0 flex-col items-end text-xl font-semibold tabular-nums leading-tight">
           <span className={aWon ? "" : "text-muted-foreground"}>
@@ -457,17 +585,33 @@ function DoublesMatchCard({
         <SetScores sets={match.sets} />
         {!readOnly && (
           <div className="flex shrink-0 items-center gap-1">
-            <EditMatchDialog
+            <EditDoublesMatchDialog
               title={`Trận ${index}`}
-              participants={`${match.pairA}  vs  ${match.pairB}`}
-              sets={match.sets}
-              bestOf={match.bestOf}
-              table={match.table}
-              disabled={locked}
+              match={match}
+              disabled={pending}
+              onSave={save}
+            />
+            {(match.sets.length > 0 || status !== "scheduled") && (
+              <ClearResultButton
+                disabled={pending}
+                onConfirm={async () => {
+                  await save({ sets: [], status: "scheduled", winner: null });
+                }}
+              />
+            )}
+            <LiveToggleButton
+              live={live}
+              disabled={pending}
+              onToggle={() =>
+                save({ status: live ? "scheduled" : "live" })
+              }
             />
             <LockToggleButton
               locked={locked}
-              onToggle={() => setStatus(locked ? "scheduled" : "done")}
+              disabled={pending}
+              onToggle={() =>
+                save({ status: locked ? "scheduled" : "done" })
+              }
             />
           </div>
         )}
@@ -481,15 +625,20 @@ export function TeamSchedule({
   groupName,
   entries,
   matches,
+  teamPlayersByTeamId = {},
   readOnly,
 }: {
   groupId: string;
   groupName: string;
   entries: string[];
-  matches: TeamMatch[];
+  matches: TeamMatchResolved[];
+  teamPlayersByTeamId?: Record<string, Array<{ id: string; name: string }>>;
   readOnly?: boolean;
 }) {
-  const standings = computeTeamStandings(entries, matches);
+  const standings = computeTeamStandings(
+    entries,
+    matches.map(resolvedToLegacyTeamMatch)
+  );
   const color = groupColor(groupId);
   return (
     <div className="flex flex-col gap-4">
@@ -536,6 +685,8 @@ export function TeamSchedule({
               index={i + 1}
               readOnly={readOnly}
               altBg={i % 2 === 1 ? color.rowAlt : ""}
+              teamAPlayers={teamPlayersByTeamId[m.teamA.id] ?? []}
+              teamBPlayers={teamPlayersByTeamId[m.teamB.id] ?? []}
             />
           ))}
         </div>
@@ -574,23 +725,227 @@ function lineupNames(lineup: typeof TEAM_MATCH_TEMPLATE[number], r: TeamRoster) 
   };
 }
 
+function subMatchToPatch(s: SubMatchResolved) {
+  return {
+    id: s.id,
+    label: s.label,
+    kind: s.kind,
+    playersA: s.playersA.map((p) => p.id),
+    playersB: s.playersB.map((p) => p.id),
+    bestOf: s.bestOf,
+    sets: s.sets,
+  };
+}
+
 function TeamMatchCard({
-  match,
+  match: initialMatch,
   index,
   readOnly,
   altBg = "",
+  teamAPlayers,
+  teamBPlayers,
 }: {
-  match: TeamMatch;
+  match: TeamMatchResolved;
   index: number;
   readOnly?: boolean;
   altBg?: string;
+  teamAPlayers: Array<{ id: string; name: string }>;
+  teamBPlayers: Array<{ id: string; name: string }>;
 }) {
-  const aWon = match.status === "done" && match.scoreA > match.scoreB;
-  const bWon = match.status === "done" && match.scoreB > match.scoreA;
-  const teamA = MOCK_TEAMS.find((t) => t.name === match.teamA);
-  const teamB = MOCK_TEAMS.find((t) => t.name === match.teamB);
-  const [roster, setRoster] = useState<TeamRoster>({});
-  const assigned = rosterAssigned(roster);
+  const [match, setMatch] = useState<TeamMatchResolved>(initialMatch);
+  const [subs, setSubs] = useState<SubMatchResolved[]>(initialMatch.individual);
+  const [status, setStatus] = useState<Status>(initialMatch.status);
+  const [winnerId, setWinnerId] = useState<string | null>(
+    initialMatch.winner?.id ?? null,
+  );
+  const [pending, setPending] = useState(false);
+  const [saveState, setSaveState] = useState<"idle" | "pending" | "saving" | "saved" | "error">("idle");
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const inFlight = useRef(false);
+  const changedSinceInFlight = useRef(false);
+  const savedIndicatorTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Refs mirror latest state so the debounced save reads fresh values
+  // (not the captured values from the render where scheduleSave was called).
+  const subsRef = useRef(subs);
+  const statusRef = useRef(status);
+  const winnerIdRef = useRef(winnerId);
+  useEffect(() => {
+    subsRef.current = subs;
+  }, [subs]);
+  useEffect(() => {
+    statusRef.current = status;
+  }, [status]);
+  useEffect(() => {
+    winnerIdRef.current = winnerId;
+  }, [winnerId]);
+
+  const live = status === "live";
+
+  // Live preview score/winner từ local subs state (không chờ server)
+  const patchSubs = subs.map(subMatchToPatch);
+  const { scoreA: liveScoreA, scoreB: liveScoreB } = deriveTeamScore(
+    patchSubs,
+    match.teamA.id,
+    match.teamB.id,
+  );
+  const liveWinnerId =
+    status === "forfeit"
+      ? winnerId
+      : deriveTeamWinner(patchSubs, match.teamA.id, match.teamB.id);
+  const aWon = liveWinnerId === match.teamA.id;
+  const bWon = liveWinnerId === match.teamB.id;
+
+  const doSave = async (nextStatus: Status, nextWinnerId: string | null, nextSubs: SubMatchResolved[]) => {
+    if (nextStatus === "forfeit" && !nextWinnerId) {
+      setSaveState("error");
+      setSaveError("Forfeit cần chọn đội thắng");
+      return;
+    }
+    inFlight.current = true;
+    changedSinceInFlight.current = false;
+    setSaveState("saving");
+    setPending(true);
+    setSaveError(null);
+    try {
+      const updated = await patchTeamMatch(match.id, {
+        individual: nextSubs.map(subMatchToPatch),
+        status: nextStatus,
+        winner: nextStatus === "forfeit" ? nextWinnerId : null,
+      });
+      setMatch(updated);
+      setSubs(updated.individual);
+      setStatus(updated.status);
+      setWinnerId(updated.winner?.id ?? null);
+      if (changedSinceInFlight.current) {
+        // Fire a follow-up save with whatever is now in state.
+        inFlight.current = false;
+        scheduleSave();
+        return;
+      }
+      setSaveState("saved");
+      if (savedIndicatorTimer.current) clearTimeout(savedIndicatorTimer.current);
+      savedIndicatorTimer.current = setTimeout(() => {
+        setSaveState((s) => (s === "saved" ? "idle" : s));
+      }, 1500);
+    } catch (e) {
+      setSaveState("error");
+      setSaveError(e instanceof Error ? e.message : "Lỗi");
+      toast.error(e instanceof Error ? e.message : "Lỗi");
+    } finally {
+      inFlight.current = false;
+      setPending(false);
+    }
+  };
+
+  const scheduleSave = () => {
+    if (readOnly) return;
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    setSaveState("pending");
+    saveTimer.current = setTimeout(() => {
+      if (inFlight.current) {
+        changedSinceInFlight.current = true;
+        return;
+      }
+      void doSave(statusRef.current, winnerIdRef.current, subsRef.current);
+    }, 400);
+  };
+
+  const saveNow = (overrideStatus?: Status, overrideWinnerId?: string | null) => {
+    if (readOnly) return;
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    const s = overrideStatus ?? statusRef.current;
+    const w =
+      overrideWinnerId !== undefined ? overrideWinnerId : winnerIdRef.current;
+    if (overrideStatus !== undefined) {
+      setStatus(s);
+      statusRef.current = s;
+    }
+    if (overrideWinnerId !== undefined) {
+      setWinnerId(w);
+      winnerIdRef.current = w;
+    }
+    if (inFlight.current) {
+      changedSinceInFlight.current = true;
+      return;
+    }
+    void doSave(s, w, subsRef.current);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+      if (savedIndicatorTimer.current) clearTimeout(savedIndicatorTimer.current);
+    };
+  }, []);
+
+  const toggleLive = () => {
+    if (readOnly || pending) return;
+    saveNow(live ? "scheduled" : "live");
+  };
+
+  const applySubs = (updater: (prev: SubMatchResolved[]) => SubMatchResolved[]) => {
+    setSubs((prev) => {
+      const next = updater(prev);
+      subsRef.current = next;
+      return next;
+    });
+  };
+  const updateSub = (subId: string, patch: Partial<SubMatchResolved>) => {
+    applySubs((prev) => prev.map((s) => (s.id === subId ? { ...s, ...patch } : s)));
+    scheduleSave();
+  };
+  const removeSub = (subId: string) => {
+    applySubs((prev) => prev.filter((s) => s.id !== subId));
+    scheduleSave();
+  };
+  const addSub = () => {
+    applySubs((prev) => [
+      ...prev,
+      {
+        id: `${match.id}-${nanoid(6)}`,
+        label: "Sub mới",
+        kind: "singles",
+        playersA: [],
+        playersB: [],
+        bestOf: 3,
+        sets: [],
+      },
+    ]);
+    scheduleSave();
+  };
+  const changeStatus = (s: Status) => {
+    setStatus(s);
+    if (s !== "forfeit") setWinnerId(null);
+    saveNow(s, s !== "forfeit" ? null : winnerId);
+  };
+  const changeWinner = (id: string) => {
+    setWinnerId(id);
+    if (status === "forfeit") saveNow(status, id);
+  };
+
+  const canFinalize = !!liveWinnerId && status !== "done" && status !== "forfeit";
+  const finalize = () => saveNow("done", null);
+  const unlockMatch = () => saveNow("scheduled", null);
+
+  const hasResult =
+    status !== "scheduled" || subs.some((s) => s.sets.length > 0);
+  const clearResult = async () => {
+    if (readOnly) return;
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    const clearedSubs = subsRef.current.map((s) => ({ ...s, sets: [] }));
+    applySubs(() => clearedSubs);
+    setStatus("scheduled");
+    statusRef.current = "scheduled";
+    setWinnerId(null);
+    winnerIdRef.current = null;
+    if (inFlight.current) {
+      changedSinceInFlight.current = true;
+      return;
+    }
+    await doSave("scheduled", null, clearedSubs);
+  };
 
   return (
     <Card className={`p-3 ${altBg}`}>
@@ -598,74 +953,151 @@ function TeamMatchCard({
         <div className="flex items-center gap-2">
           <span className="font-medium text-foreground">Trận {index}</span>
           {match.table != null && <span>· Bàn {match.table}</span>}
+          {!readOnly && <SaveIndicator state={saveState} error={saveError} />}
         </div>
-        <StatusBadge status={match.status} />
-      </div>
-
-      <div className="flex items-center gap-3">
-        <div className="min-w-0 flex-1 space-y-0.5 text-sm">
-          <div className={`truncate ${aWon ? "font-semibold" : ""}`}>{match.teamA}</div>
-          <div className={`truncate ${bWon ? "font-semibold" : ""}`}>{match.teamB}</div>
-        </div>
-        <div className="flex shrink-0 flex-col items-end text-xl font-semibold tabular-nums leading-tight">
-          <span className={aWon ? "" : "text-muted-foreground"}>{match.scoreA}</span>
-          <span className={bWon ? "" : "text-muted-foreground"}>{match.scoreB}</span>
-        </div>
-      </div>
-
-      {!assigned && (
-        <div className="mt-2 flex items-center justify-between rounded-md bg-amber-500/10 px-2 py-1.5 text-sm">
-          <span className="text-amber-700 dark:text-amber-300">⚠ Chưa gán đội hình</span>
-          {!readOnly && teamA && teamB && (
-            <AssignRosterDialog
-              teamA={teamA}
-              teamB={teamB}
-              roster={roster}
-              onSave={setRoster}
+        <div className="flex items-center gap-2">
+          {!readOnly && (
+            <LiveToggleButton
+              live={live}
+              compact
+              disabled={pending}
+              onToggle={toggleLive}
             />
           )}
+          <StatusBadge status={status} />
+        </div>
+      </div>
+
+      {!readOnly && (status === "done" || status === "forfeit" || canFinalize || hasResult) && (
+        <div className="mb-2 flex items-center justify-end gap-2">
+          {hasResult && (
+            <ClearResultButton
+              disabled={pending}
+              onConfirm={clearResult}
+            />
+          )}
+          {status === "done" || status === "forfeit" ? (
+            <Button
+              type="button"
+              size="xs"
+              variant="ghost"
+              onClick={unlockMatch}
+              disabled={pending}
+              className="bg-muted hover:bg-muted/70"
+            >
+              <LockOpen /> Mở lại
+            </Button>
+          ) : canFinalize ? (
+            <Button
+              type="button"
+              size="xs"
+              onClick={finalize}
+              disabled={pending}
+            >
+              <CheckCircle2 /> Chốt trận
+            </Button>
+          ) : null}
         </div>
       )}
 
-      <details className="mt-2 group" open={assigned}>
+      <div className="flex items-center gap-3">
+        <div className="min-w-0 flex-1 space-y-0.5 text-sm">
+          <div className={`truncate ${aWon ? "font-semibold" : ""}`}>{match.teamA.name}</div>
+          <div className={`truncate ${bWon ? "font-semibold" : ""}`}>{match.teamB.name}</div>
+        </div>
+        <div className="flex shrink-0 flex-col items-end text-xl font-semibold tabular-nums leading-tight">
+          <span className={aWon ? "" : "text-muted-foreground"}>{liveScoreA}</span>
+          <span className={bWon ? "" : "text-muted-foreground"}>{liveScoreB}</span>
+        </div>
+      </div>
+
+      <details className="mt-2 group" open>
         <summary className="flex cursor-pointer list-none items-center justify-between rounded-md bg-muted/50 px-2 py-1.5 text-sm text-muted-foreground">
-          <span>Chi tiết 3 lượt {assigned ? "" : "(slot)"}</span>
-          <div className="flex items-center gap-2">
-            {assigned && !readOnly && teamA && teamB && (
-              <AssignRosterDialog
-                teamA={teamA}
-                teamB={teamB}
-                roster={roster}
-                onSave={setRoster}
-                trigger={
-                  <Button size="xs" variant="ghost" type="button">
-                    Sửa đội hình
-                  </Button>
-                }
-              />
-            )}
-            <ChevronRight className="size-3.5 transition-transform group-open:rotate-90" />
-          </div>
+          <span>Chi tiết {subs.length} lượt</span>
+          <ChevronRight className="size-3.5 transition-transform group-open:rotate-90" />
         </summary>
+
+        {!readOnly && (
+          <div className="mt-2 grid gap-2">
+            <div className="flex flex-wrap items-center gap-2 text-sm">
+              <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+                Trạng thái
+              </Label>
+              {(["scheduled", "live", "done", "forfeit"] as const).map((s) => (
+                <label
+                  key={s}
+                  className={`inline-flex cursor-pointer items-center gap-1.5 rounded-md border px-2 py-1 text-xs ${
+                    status === s ? "border-primary bg-primary/5" : "border-input"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name={`status-${match.id}`}
+                    value={s}
+                    checked={status === s}
+                    onChange={() => changeStatus(s)}
+                    className="size-3"
+                  />
+                  {STATUS_META[s].label}
+                </label>
+              ))}
+            </div>
+            {status === "forfeit" && (
+              <div className="flex flex-wrap items-center gap-2 text-sm">
+                <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+                  Đội thắng
+                </Label>
+                {[match.teamA, match.teamB].map((t) => (
+                  <label
+                    key={t.id}
+                    className={`inline-flex cursor-pointer items-center gap-1.5 rounded-md border px-2 py-1 text-xs ${
+                      winnerId === t.id ? "border-primary bg-primary/5" : "border-input"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name={`winner-${match.id}`}
+                      value={t.id}
+                      checked={winnerId === t.id}
+                      onChange={() => changeWinner(t.id)}
+                      className="size-3"
+                    />
+                    <span className="truncate">{t.name}</span>
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         <ul className="mt-2 flex flex-col gap-1.5">
-          {match.individual.map((im, i) => {
-            const lineup = TEAM_MATCH_TEMPLATE[i];
-            const names = lineupNames(lineup, roster);
-            return (
-              <IndividualMatchRow
-                key={im.id}
-                match={{ ...im, playerA: names.a, playerB: names.b }}
-                readOnly={readOnly}
-                placeholder={names.placeholder}
-                slotHint={
-                  lineup.kind === "single"
-                    ? `${lineup.slot} vs ${lineup.oppSlot}`
-                    : `${lineup.slots.join("+")} vs ${lineup.oppSlots.join("+")}`
-                }
-              />
-            );
-          })}
+          {subs.map((sub) => (
+            <TeamSubMatchRow
+              key={sub.id}
+              sub={sub}
+              readOnly={readOnly}
+              teamAPlayers={teamAPlayers}
+              teamBPlayers={teamBPlayers}
+              canDelete={subs.length > 1}
+              onChange={(patch) => updateSub(sub.id, patch)}
+              onDelete={() => removeSub(sub.id)}
+            />
+          ))}
         </ul>
+
+        {!readOnly && (
+          <div className="mt-2 flex items-center justify-start gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={addSub}
+              disabled={pending}
+            >
+              <Plus /> Thêm sub
+            </Button>
+          </div>
+        )}
       </details>
     </Card>
   );
@@ -835,14 +1267,263 @@ function IndividualMatchRow({
   );
 }
 
+function TeamSubMatchRow({
+  sub,
+  readOnly,
+  teamAPlayers,
+  teamBPlayers,
+  canDelete,
+  onChange,
+  onDelete,
+}: {
+  sub: SubMatchResolved;
+  readOnly?: boolean;
+  teamAPlayers: Array<{ id: string; name: string }>;
+  teamBPlayers: Array<{ id: string; name: string }>;
+  canDelete: boolean;
+  onChange: (patch: Partial<SubMatchResolved>) => void;
+  onDelete: () => void;
+}) {
+  const { a, b } = setsSummary(sub.sets);
+  const hasResult = sub.sets.length > 0;
+  const aWon = hasResult && a > b;
+  const bWon = hasResult && b > a;
+  const playerCount: 1 | 2 = sub.kind === "doubles" ? 2 : 1;
+
+  const renderPlayers = (players: SubMatchResolved["playersA"], pool: typeof teamAPlayers, side: "A" | "B") => {
+    if (readOnly) {
+      const display =
+        players.length === 0
+          ? "—"
+          : players.map((p) => p.name).join(" / ");
+      return <span className="truncate">{display}</span>;
+    }
+    return (
+      <PlayerPicker
+        options={pool}
+        value={players.map((p) => p.id)}
+        count={playerCount}
+        label={`${sub.label} · Đội ${side}`}
+        onChange={(ids) => {
+          const next = ids
+            .map((id) => pool.find((o) => o.id === id))
+            .filter((p): p is { id: string; name: string } => !!p);
+          onChange(side === "A" ? { playersA: next } : { playersB: next });
+        }}
+      />
+    );
+  };
+
+  return (
+    <li className="rounded-md border p-2">
+      <div className="mb-1 flex items-center justify-between gap-2 text-sm text-muted-foreground">
+        {readOnly ? (
+          <span className="font-medium text-foreground">{sub.label}</span>
+        ) : (
+          <Input
+            value={sub.label}
+            onChange={(e) => onChange({ label: e.target.value })}
+            className="h-7 max-w-[10rem] text-sm"
+          />
+        )}
+        <div className="flex items-center gap-2">
+          {!readOnly && (
+            <select
+              value={sub.kind}
+              onChange={(e) => {
+                const kind = e.target.value as "singles" | "doubles";
+                const limit: 1 | 2 = kind === "doubles" ? 2 : 1;
+                onChange({
+                  kind,
+                  playersA: sub.playersA.slice(0, limit),
+                  playersB: sub.playersB.slice(0, limit),
+                });
+              }}
+              className="h-7 rounded-md border border-input bg-transparent px-1.5 text-xs"
+            >
+              <option value="singles">Đơn</option>
+              <option value="doubles">Đôi</option>
+            </select>
+          )}
+          <span className="text-xs">thắng {Math.ceil(sub.bestOf / 2)}/{sub.bestOf} ván</span>
+          {!readOnly && (
+            <Button
+              type="button"
+              size="icon-xs"
+              variant="ghost"
+              aria-label="Xoá sub"
+              disabled={!canDelete}
+              onClick={onDelete}
+              className="bg-destructive/10 hover:bg-destructive/20"
+            >
+              <Trash2 className="text-destructive" />
+            </Button>
+          )}
+        </div>
+      </div>
+      <div className="flex items-center gap-2 text-sm">
+        <div className="min-w-0 flex-1 space-y-1">
+          <div className={`min-w-0 ${aWon ? "font-semibold" : ""}`}>
+            {renderPlayers(sub.playersA, teamAPlayers, "A")}
+          </div>
+          <div className={`min-w-0 ${bWon ? "font-semibold" : ""}`}>
+            {renderPlayers(sub.playersB, teamBPlayers, "B")}
+          </div>
+        </div>
+        <div className="flex shrink-0 flex-col items-end font-semibold tabular-nums leading-tight">
+          <span className={aWon ? "" : "text-muted-foreground"}>{hasResult ? a : "–"}</span>
+          <span className={bWon ? "" : "text-muted-foreground"}>{hasResult ? b : "–"}</span>
+        </div>
+      </div>
+      <div className="mt-1.5 flex items-center justify-between gap-2">
+        <SetScores sets={sub.sets} />
+        {!readOnly && (
+          <SubSetsEditor
+            sub={sub}
+            onSetsChange={(sets) => onChange({ sets })}
+            onBestOfChange={(bestOf) => onChange({ bestOf })}
+          />
+        )}
+      </div>
+    </li>
+  );
+}
+
+function SubSetsEditor({
+  sub,
+  onSetsChange,
+  onBestOfChange,
+}: {
+  sub: SubMatchResolved;
+  onSetsChange: (sets: SetScore[]) => void;
+  onBestOfChange: (bestOf: BestOf) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const minRows = Math.ceil(sub.bestOf / 2);
+  const initialRows: Array<{ a: string; b: string }> =
+    sub.sets.length > 0
+      ? sub.sets.map((s) => ({ a: String(s.a), b: String(s.b) }))
+      : Array.from({ length: minRows }, () => ({ a: "", b: "" }));
+  const [rows, setRows] = useState(initialRows);
+
+  const reset = () => setRows(initialRows);
+  const updateRow = (i: number, side: "a" | "b", v: string) =>
+    setRows((rs) => rs.map((r, idx) => (idx === i ? { ...r, [side]: v } : r)));
+  const addRow = () => setRows((rs) => [...rs, { a: "", b: "" }]);
+  const removeRow = (i: number) => setRows((rs) => rs.filter((_, idx) => idx !== i));
+
+  const apply = () => {
+    onSetsChange(parseSetsRows(rows));
+    setOpen(false);
+  };
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(v) => {
+        setOpen(v);
+        if (v) reset();
+      }}
+    >
+      <DialogTrigger
+        render={
+          <Button
+            size="icon-xs"
+            variant="ghost"
+            aria-label="Sửa tỉ số"
+            className="bg-muted hover:bg-muted/70"
+          />
+        }
+      >
+        <Pencil />
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Sửa tỉ số · {sub.label}</DialogTitle>
+          <DialogDescription>
+            Thắng {Math.ceil(sub.bestOf / 2)}/{sub.bestOf} ván · nhập tỉ số từng ván.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-3">
+          <div className="grid gap-1.5">
+            <Label>Best of</Label>
+            <div className="flex gap-2">
+              {([3, 5] as const).map((b) => (
+                <label
+                  key={b}
+                  className={`inline-flex cursor-pointer items-center gap-1.5 rounded-md border px-2 py-1 text-sm ${
+                    sub.bestOf === b ? "border-primary bg-primary/5" : "border-input"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name={`bestof-${sub.id}`}
+                    value={b}
+                    checked={sub.bestOf === b}
+                    onChange={() => onBestOfChange(b)}
+                    className="size-3.5"
+                  />
+                  Thắng {Math.ceil(b / 2)}/{b}
+                </label>
+              ))}
+            </div>
+          </div>
+          <div className="grid gap-2">
+            <Label>Tỉ số các ván</Label>
+            {rows.map((row, i) => (
+              <div
+                key={i}
+                className="grid grid-cols-[3rem_1fr_auto_1fr_auto] items-center gap-2"
+              >
+                <span className="text-sm text-muted-foreground">Ván {i + 1}</span>
+                <Input
+                  value={row.a}
+                  onChange={(e) => updateRow(i, "a", e.target.value)}
+                  inputMode="numeric"
+                />
+                <span className="text-muted-foreground">-</span>
+                <Input
+                  value={row.b}
+                  onChange={(e) => updateRow(i, "b", e.target.value)}
+                  inputMode="numeric"
+                />
+                <Button
+                  type="button"
+                  size="icon-sm"
+                  variant="ghost"
+                  aria-label="Xoá ván"
+                  onClick={() => removeRow(i)}
+                  disabled={rows.length <= 1}
+                  className="bg-destructive/10 hover:bg-destructive/20"
+                >
+                  <Trash2 className="text-destructive" />
+                </Button>
+              </div>
+            ))}
+            <Button type="button" variant="outline" size="sm" onClick={addRow}>
+              <Plus /> Thêm ván
+            </Button>
+          </div>
+        </div>
+        <DialogFooter>
+          <DialogClose render={<Button variant="outline" type="button" />}>Huỷ</DialogClose>
+          <Button type="button" onClick={apply}>Áp dụng</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function LockToggleButton({
   locked,
   onToggle,
   compact,
+  disabled,
 }: {
   locked: boolean;
   onToggle: () => void;
   compact?: boolean;
+  disabled?: boolean;
 }) {
   if (locked) {
     return (
@@ -854,6 +1535,7 @@ function LockToggleButton({
         aria-label="Mở lại để sửa"
         title="Mở lại để sửa"
         className="bg-muted hover:bg-muted/70"
+        disabled={disabled}
       >
         <LockOpen />
       </Button>
@@ -866,8 +1548,114 @@ function LockToggleButton({
       size={compact ? "xs" : "sm"}
       variant="outline"
       aria-label="Chốt kết quả"
+      disabled={disabled}
     >
       <CheckCircle2 /> Chốt
+    </Button>
+  );
+}
+
+function ClearResultButton({
+  disabled,
+  onConfirm,
+}: {
+  disabled?: boolean;
+  onConfirm: () => Promise<void> | void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [pending, setPending] = useState(false);
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger
+        disabled={disabled}
+        render={
+          <Button
+            size="icon-sm"
+            variant="ghost"
+            aria-label="Xoá kết quả"
+            title="Xoá kết quả"
+            className="bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-400"
+            disabled={disabled}
+          />
+        }
+      >
+        <Trash2 />
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Xoá kết quả trận này?</DialogTitle>
+          <DialogDescription>
+            Tất cả set + winner sẽ bị xoá, trận về trạng thái &quot;Chưa đấu&quot;.
+            Không thể hoàn tác.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <DialogClose
+            render={<Button variant="outline" type="button" disabled={pending} />}
+          >
+            Huỷ
+          </DialogClose>
+          <Button
+            type="button"
+            variant="destructive"
+            disabled={pending}
+            onClick={async () => {
+              setPending(true);
+              try {
+                await onConfirm();
+                setOpen(false);
+              } catch {
+                /* surfaced by caller toast */
+              } finally {
+                setPending(false);
+              }
+            }}
+          >
+            Xoá kết quả
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function LiveToggleButton({
+  live,
+  onToggle,
+  compact,
+  disabled,
+}: {
+  live: boolean;
+  onToggle: () => void;
+  compact?: boolean;
+  disabled?: boolean;
+}) {
+  if (live) {
+    return (
+      <Button
+        type="button"
+        onClick={onToggle}
+        size={compact ? "icon-xs" : "icon-sm"}
+        variant="ghost"
+        aria-label="Dừng live"
+        title="Dừng live"
+        className="bg-red-500/15 text-red-600 hover:bg-red-500/25 dark:text-red-400"
+        disabled={disabled}
+      >
+        <Radio className="animate-pulse" />
+      </Button>
+    );
+  }
+  return (
+    <Button
+      type="button"
+      onClick={onToggle}
+      size={compact ? "xs" : "sm"}
+      variant="outline"
+      aria-label="Bắt đầu đấu"
+      disabled={disabled}
+    >
+      <Radio /> Live
     </Button>
   );
 }
@@ -974,6 +1762,213 @@ function EditMatchDialog({
         <DialogFooter>
           <DialogClose render={<Button variant="outline" type="button" />}>Huỷ</DialogClose>
           <Button type="button">Lưu</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function parseSetsRows(rows: Array<{ a: string; b: string }>): SetScore[] {
+  const out: SetScore[] = [];
+  for (const r of rows) {
+    if (r.a === "" && r.b === "") continue;
+    const a = Number(r.a);
+    const b = Number(r.b);
+    if (!Number.isFinite(a) || !Number.isFinite(b)) continue;
+    if (a < 0 || b < 0 || a > 99 || b > 99) continue;
+    out.push({ a, b });
+  }
+  return out;
+}
+
+function EditDoublesMatchDialog({
+  title,
+  match,
+  disabled,
+  onSave,
+}: {
+  title: string;
+  match: MatchResolved;
+  disabled?: boolean;
+  onSave: (body: {
+    sets?: SetScore[];
+    status?: Status;
+    winner?: string | null;
+  }) => Promise<boolean>;
+}) {
+  const [open, setOpen] = useState(false);
+  const minRows = Math.ceil(match.bestOf / 2);
+  const initialRows: Array<{ a: string; b: string }> =
+    match.sets.length > 0
+      ? match.sets.map((s) => ({ a: String(s.a), b: String(s.b) }))
+      : Array.from({ length: minRows }, () => ({ a: "", b: "" }));
+  const [rows, setRows] = useState(initialRows);
+  const [status, setStatus] = useState<Status>(match.status);
+  const [winnerId, setWinnerId] = useState<string | null>(
+    match.winner?.id ?? null,
+  );
+  const [saving, setSaving] = useState(false);
+
+  const reset = () => {
+    setRows(initialRows);
+    setStatus(match.status);
+    setWinnerId(match.winner?.id ?? null);
+  };
+
+  const updateRow = (i: number, side: "a" | "b", v: string) =>
+    setRows((rs) => rs.map((r, idx) => (idx === i ? { ...r, [side]: v } : r)));
+  const addRow = () => setRows((rs) => [...rs, { a: "", b: "" }]);
+  const removeRow = (i: number) => setRows((rs) => rs.filter((_, idx) => idx !== i));
+
+  const onSubmit = async () => {
+    const body: { sets?: SetScore[]; status?: Status; winner?: string | null } = {
+      sets: parseSetsRows(rows),
+      status,
+    };
+    if (status === "forfeit") {
+      if (!winnerId) {
+        toast.error("Vui lòng chọn người thắng");
+        return;
+      }
+      body.winner = winnerId;
+    } else {
+      body.winner = null;
+    }
+    setSaving(true);
+    const ok = await onSave(body);
+    setSaving(false);
+    if (ok) setOpen(false);
+  };
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(v) => {
+        setOpen(v);
+        if (v) reset();
+      }}
+    >
+      <DialogTrigger
+        disabled={disabled}
+        render={
+          <Button
+            size="icon-sm"
+            variant="ghost"
+            aria-label="Sửa tỉ số"
+            disabled={disabled}
+            className="bg-muted hover:bg-muted/70"
+          />
+        }
+      >
+        <Pencil />
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Sửa trận · {title}</DialogTitle>
+          <DialogDescription>
+            <span className="block font-medium text-foreground">
+              {match.pairA.label}  vs  {match.pairB.label}
+            </span>
+            <span className="block">
+              Thắng {Math.ceil(match.bestOf / 2)}/{match.bestOf} ván.
+            </span>
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-4">
+          <div className="grid gap-1.5">
+            <Label>Trạng thái</Label>
+            <div className="flex flex-wrap gap-2">
+              {(["scheduled", "live", "done", "forfeit"] as const).map((s) => (
+                <label
+                  key={s}
+                  className={`inline-flex cursor-pointer items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-sm ${
+                    status === s ? "border-primary bg-primary/5" : "border-input"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="status"
+                    value={s}
+                    checked={status === s}
+                    onChange={() => setStatus(s)}
+                    className="size-3.5"
+                  />
+                  {STATUS_META[s].label}
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {status === "forfeit" && (
+            <div className="grid gap-1.5">
+              <Label>Người thắng</Label>
+              <div className="flex flex-col gap-1.5">
+                {[match.pairA, match.pairB].map((p) => (
+                  <label
+                    key={p.id}
+                    className={`flex cursor-pointer items-center gap-2 rounded-md border px-2.5 py-1.5 text-sm ${
+                      winnerId === p.id ? "border-primary bg-primary/5" : "border-input"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="winner"
+                      value={p.id}
+                      checked={winnerId === p.id}
+                      onChange={() => setWinnerId(p.id)}
+                      className="size-3.5"
+                    />
+                    <span className="truncate">{p.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="grid gap-2">
+            <Label>Tỉ số các ván</Label>
+            {rows.map((row, i) => (
+              <div
+                key={i}
+                className="grid grid-cols-[3rem_1fr_auto_1fr_auto] items-center gap-2"
+              >
+                <span className="text-sm text-muted-foreground">Ván {i + 1}</span>
+                <Input
+                  value={row.a}
+                  onChange={(e) => updateRow(i, "a", e.target.value)}
+                  inputMode="numeric"
+                />
+                <span className="text-muted-foreground">-</span>
+                <Input
+                  value={row.b}
+                  onChange={(e) => updateRow(i, "b", e.target.value)}
+                  inputMode="numeric"
+                />
+                <Button
+                  type="button"
+                  size="icon-sm"
+                  variant="ghost"
+                  aria-label="Xoá ván"
+                  onClick={() => removeRow(i)}
+                  disabled={rows.length <= 1}
+                  className="bg-destructive/10 hover:bg-destructive/20"
+                >
+                  <Trash2 className="text-destructive" />
+                </Button>
+              </div>
+            ))}
+            <Button type="button" variant="outline" size="sm" onClick={addRow}>
+              <Plus /> Thêm ván
+            </Button>
+          </div>
+        </div>
+        <DialogFooter>
+          <DialogClose render={<Button variant="outline" type="button" disabled={saving} />}>
+            Huỷ
+          </DialogClose>
+          <Button type="button" onClick={onSubmit} disabled={saving}>
+            {saving && <Loader2 className="size-4 animate-spin" />} Lưu
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
