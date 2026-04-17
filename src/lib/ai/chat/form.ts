@@ -15,6 +15,14 @@ export type FormResult = {
   }>;
 };
 
+/**
+ * Phân tích phong độ N trận gần nhất của 1 cặp.
+ *
+ * @remarks
+ * Caller phải truyền `matches` theo thứ tự thời gian (cũ trước, mới sau).
+ * Nếu lấy từ DB, dùng `fetchDoublesMatchesByGroup` (đã sort by id, khớp thứ
+ * tự tạo match). V2 sẽ cân nhắc truyền `updatedAt` khi schema có.
+ */
 export function analyzePairForm(input: {
   pairId: string;
   matches: MatchResolved[];
@@ -22,11 +30,11 @@ export function analyzePairForm(input: {
 }): FormResult {
   const done = input.matches
     .filter((m) => m.status === "done" || m.status === "forfeit")
-    .filter((m) => m.pairA.id === input.pairId || m.pairB.id === input.pairId)
-    .sort((a, b) => b.id.localeCompare(a.id)) // assume id roughly ordered; caller can sort
-    .slice(0, input.lastN);
+    .filter((m) => m.pairA.id === input.pairId || m.pairB.id === input.pairId);
 
-  if (done.length === 0) {
+  const recent = done.slice(-input.lastN).reverse();
+
+  if (recent.length === 0) {
     return {
       totalRecent: 0,
       wins: 0,
@@ -38,7 +46,7 @@ export function analyzePairForm(input: {
     };
   }
 
-  const lastMatches = done.map((m) => {
+  const lastMatches = recent.map((m) => {
     const isA = m.pairA.id === input.pairId;
     const won = m.winner?.id === input.pairId;
     return {
