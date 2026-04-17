@@ -47,26 +47,37 @@ export function StandingsSummary({
                   {rows.map((r, ri) => (
                     <div
                       key={r.entry}
-                      className="flex items-center gap-2 rounded-lg bg-background/60 px-2.5 py-1.5 text-sm"
+                      className="rounded-lg bg-background/60 px-2.5 py-2 text-sm"
                     >
-                      <span
-                        className={`inline-flex size-5 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
-                          ri === 0
-                            ? "bg-yellow-500/20 text-yellow-600 dark:text-yellow-400"
-                            : ri === 1
-                              ? "bg-gray-300/30 text-gray-500 dark:text-gray-400"
-                              : "bg-muted text-muted-foreground"
-                        }`}
-                      >
-                        {ri + 1}
-                      </span>
-                      <span className="min-w-0 flex-1 truncate">{r.entry}</span>
-                      <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
-                        {r.won}T {r.lost}B
-                      </span>
-                      <span className="shrink-0 min-w-[28px] text-right font-semibold tabular-nums">
-                        {r.points}đ
-                      </span>
+                      <div className="flex items-start gap-2">
+                        <span
+                          className={`mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
+                            ri === 0
+                              ? "bg-yellow-500/20 text-yellow-600 dark:text-yellow-400"
+                              : ri === 1
+                                ? "bg-gray-300/30 text-gray-500 dark:text-gray-400"
+                                : "bg-muted text-muted-foreground"
+                          }`}
+                        >
+                          {ri + 1}
+                        </span>
+                        <span className="min-w-0 flex-1 leading-snug">{r.entry}</span>
+                      </div>
+                      <div className="mt-1 flex items-center gap-2 pl-7 text-xs tabular-nums text-muted-foreground">
+                        <span>{r.won}T {r.lost}B</span>
+                        <span className={
+                          r.diff > 0
+                            ? "text-green-600 dark:text-green-400"
+                            : r.diff < 0
+                              ? "text-red-600 dark:text-red-400"
+                              : ""
+                        }>
+                          HS {r.diff > 0 ? `+${r.diff}` : r.diff}
+                        </span>
+                        <span className="ml-auto font-semibold text-foreground">
+                          {r.points}đ
+                        </span>
+                      </div>
                     </div>
                   ))}
                 </div>
