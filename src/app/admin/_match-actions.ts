@@ -52,6 +52,22 @@ export async function patchTeamMatch(
   return json.data;
 }
 
+/** Auto-reseed KO bracket if no KO match has started yet. */
+export async function tryAutoReseedKo(kind: "doubles" | "teams"): Promise<void> {
+  const base = kind === "doubles" ? "doubles" : "teams";
+  // Fetch current bracket
+  const res = await fetch(`/api/${base}/ko`);
+  if (!res.ok) return;
+  const json = await res.json();
+  const matches = json.data as Array<{ status: string }> | null;
+  if (!matches || matches.length === 0) return;
+  // If any match is live, done, or forfeit → don't reseed
+  if (matches.some((m) => m.status !== "scheduled")) return;
+  // All scheduled → safe to reseed
+  await fetch(`/api/${base}/ko`, { method: "DELETE" });
+  await fetch(`/api/${base}/ko/seed`, { method: "POST" });
+}
+
 export type RegenerateSummary = { kept: number; deleted: number; added: number };
 
 export async function regenerateMatches(
@@ -81,4 +97,79 @@ export async function regenerateMatches(
     throw new Error(json.error ?? "Lỗi không xác định");
   }
   return json.data;
+}
+
+// --- AI parse-match ---
+
+export type AiSingleMatchContext = {
+  id: string;
+  type: "doubles" | "team";
+  bestOf: 3 | 5;
+  sideA: string;
+  sideB: string;
+  subMatches?: Array<{
+    label: string;
+    kind: "singles" | "doubles";
+    bestOf: 3 | 5;
+  }>;
+};
+
+export type AiBatchGroupContext = {
+  type: "doubles" | "team";
+  matches: Array<{
+    id: string;
+    sideA: string;
+    sideB: string;
+    bestOf: 3 | 5;
+    hasResult: boolean;
+    subMatches?: Array<{
+      label: string;
+      kind: "singles" | "doubles";
+      bestOf: 3 | 5;
+    }>;
+  }>;
+};
+
+export type AiParseInput = {
+  text?: string;
+  imageBase64?: string;
+} & (
+  | { match: AiSingleMatchContext; group?: never }
+  | { group: AiBatchGroupContext; match?: never }
+);
+
+export type AiParseResponse =
+  | {
+      status: "ok";
+      mode: "single";
+      matchId: string;
+      result: { sets: SetScore[]; subMatches?: Array<{ label: string; sets: SetScore[] }> };
+    }
+  | {
+      status: "ok";
+      mode: "batch";
+      parsed: Array<{
+        matchId: string;
+        sideA: string;
+        sideB: string;
+        result: { sets: SetScore[]; subMatches?: Array<{ label: string; sets: SetScore[] }> };
+        alreadyHasResult: boolean;
+      }>;
+      unmatched?: string[];
+    }
+  | { status: "rejected"; reason: string };
+
+export async function parseMatchWithAI(
+  input: AiParseInput,
+): Promise<AiParseResponse> {
+  const res = await fetch("/api/ai/parse-match", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  const json = (await res.json()) as ApiResponse<AiParseResponse>;
+  if (!res.ok && !json.data) {
+    throw new Error(json.error ?? "Lỗi không xác định");
+  }
+  return json.data!;
 }

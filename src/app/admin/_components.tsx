@@ -13,6 +13,7 @@ import {
   Radio,
   Search,
   Trash2,
+  Sparkles,
   Trophy,
   X,
 } from "lucide-react";
@@ -35,14 +36,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type {
   Content,
   IndividualMatch,
-  KnockoutMatch,
-  MatchStatus,
   OppSlot,
   Player,
   Team,
   TeamSlot,
 } from "./_mock";
-import { MOCK_TEAMS, ROUND_LABEL, TEAM_MATCH_TEMPLATE } from "./_mock";
+import { TEAM_MATCH_TEMPLATE } from "./_mock";
+import type {
+  DoublesKoResolved,
+  TeamKoResolved,
+  KoRound,
+} from "@/lib/schemas/knockout";
+import { ROUND_LABEL } from "@/lib/schemas/knockout";
 import type { PairWithNames } from "@/lib/schemas/pair";
 import type { TeamWithNames } from "@/lib/schemas/team";
 import type { GroupResolved } from "@/lib/schemas/group";
@@ -54,7 +59,7 @@ import type {
   SetScore,
   BestOf,
 } from "@/lib/schemas/match";
-import { patchDoublesMatch, patchTeamMatch } from "./_match-actions";
+import { patchDoublesMatch, patchTeamMatch, tryAutoReseedKo } from "./_match-actions";
 import { deriveTeamScore, deriveTeamWinner } from "@/lib/matches/derive";
 import { toast } from "sonner";
 import { nanoid } from "nanoid";
@@ -66,6 +71,7 @@ import { PlayersSection } from "./_players-section";
 import { PairsSection } from "./_pairs-section";
 import { TeamsSection } from "./_teams-section";
 import { GroupsSection } from "./_groups-section";
+import { AiSingleMatchButton } from "./_ai-chat-modal";
 
 const DEFAULT_TAB = "players";
 const TAB_VALUES = ["players", "entries", "groups", "ko"] as const;
@@ -83,7 +89,6 @@ export function ContentWorkspace({
   teams,
   groups,
   knockout,
-  knockoutNote,
 }: {
   kind: Content;
   headerSlot?: React.ReactNode;
@@ -91,8 +96,7 @@ export function ContentWorkspace({
   pairs?: PairWithNames[];
   teams?: TeamWithNames[];
   groups: GroupResolved[];
-  knockout: KnockoutMatch[];
-  knockoutNote?: string;
+  knockout: DoublesKoResolved[] | TeamKoResolved[];
 }) {
   const isDoubles = kind === "doubles";
   const router = useRouter();
@@ -136,7 +140,7 @@ export function ContentWorkspace({
         <GroupsSection kind={kind} groups={groups} pairs={pairs} teams={teams} />
       </TabsContent>
       <TabsContent value="ko" className="mt-4">
-        <KnockoutSection kind={kind} matches={knockout} note={knockoutNote} />
+        <KnockoutSection kind={kind} matches={knockout} teams={teams} />
       </TabsContent>
     </Tabs>
   );
@@ -255,12 +259,165 @@ function RankBadge({ rank }: { rank: number; active: boolean }) {
   );
 }
 
+function markdownToHtml(md: string): string {
+  const lines = md.split("\n");
+  const html: string[] = [];
+  let inList: "ul" | "ol" | null = null;
+
+  const flush = () => {
+    if (inList) {
+      html.push(`</${inList}>`);
+      inList = null;
+    }
+  };
+
+  for (const raw of lines) {
+    const line = raw.trimEnd();
+
+    // Empty line → close list, add spacing
+    if (!line) {
+      flush();
+      continue;
+    }
+
+    // Headers
+    const hMatch = /^(#{1,3}) (.+)/.exec(line);
+    if (hMatch) {
+      flush();
+      const level = hMatch[1].length;
+      html.push(`<h${level}>${inlineFmt(hMatch[2])}</h${level}>`);
+      continue;
+    }
+
+    // Bullet list
+    const bulletMatch = /^[-*•] (.+)/.exec(line);
+    if (bulletMatch) {
+      if (inList !== "ul") {
+        flush();
+        html.push("<ul>");
+        inList = "ul";
+      }
+      html.push(`<li>${inlineFmt(bulletMatch[1])}</li>`);
+      continue;
+    }
+
+    // Numbered list
+    const numMatch = /^\d+[.)]\s*(.+)/.exec(line);
+    if (numMatch) {
+      if (inList !== "ol") {
+        flush();
+        html.push("<ol>");
+        inList = "ol";
+      }
+      html.push(`<li>${inlineFmt(numMatch[1])}</li>`);
+      continue;
+    }
+
+    // Regular text
+    flush();
+    html.push(`<p>${inlineFmt(line)}</p>`);
+  }
+
+  flush();
+  return html.join("");
+}
+
+function inlineFmt(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*(.+?)\*/g, "<em>$1</em>");
+}
+
+function ExplainStandingsButton({
+  rows,
+  kind,
+}: {
+  rows: StandingRow[];
+  kind: "doubles" | "team";
+}) {
+  const [open, setOpen] = useState(false);
+  const [explanation, setExplanation] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const explain = async () => {
+    if (explanation) return; // already fetched
+    setLoading(true);
+    try {
+      const res = await fetch("/api/ai/explain-standings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rows, kind }),
+      });
+      const json = await res.json();
+      if (json.data) {
+        setExplanation(json.data);
+      } else {
+        toast.error(json.error ?? "Không thể giải thích");
+      }
+    } catch {
+      toast.error("Lỗi kết nối AI");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(v) => {
+        setOpen(v);
+        if (v && !explanation) explain();
+      }}
+    >
+      <DialogTrigger
+        render={
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label="AI giải thích xếp hạng"
+          />
+        }
+      >
+        <Sparkles className="size-4" />
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Giải thích xếp hạng</DialogTitle>
+          <DialogDescription>
+            Phân tích bởi AI
+          </DialogDescription>
+        </DialogHeader>
+        <div className="max-h-[60dvh] overflow-y-auto px-1 py-2">
+          {loading && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="size-4 animate-spin" />
+              Đang phân tích...
+            </div>
+          )}
+          {explanation && (
+            <div
+              className="prose prose-sm dark:prose-invert max-w-none text-sm [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4"
+              dangerouslySetInnerHTML={{ __html: markdownToHtml(explanation) }}
+            />
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function StandingsCard({
   rows,
   diffLabel,
+  kind,
 }: {
   rows: StandingRow[];
   diffLabel: string;
+  kind?: "doubles" | "team";
 }) {
   const played = rows.some((r) => r.played > 0);
   return (
@@ -277,7 +434,10 @@ function StandingsCard({
             </p>
           </div>
         </div>
-        <div className="text-xs text-muted-foreground">Thắng: 1 điểm</div>
+        <div className="flex items-center gap-2">
+          {played && kind && <ExplainStandingsButton rows={rows} kind={kind} />}
+          <div className="text-xs text-muted-foreground">Thắng: 1 điểm</div>
+        </div>
       </div>
 
       <ol className="flex flex-col gap-2">
@@ -334,6 +494,7 @@ export function DoublesSchedule({
   const [matches, setMatches] = useState(initialMatches);
   const handleMatchUpdated = (updated: MatchResolved) => {
     setMatches((prev) => prev.map((m) => (m.id === updated.id ? updated : m)));
+    tryAutoReseedKo("doubles").catch(() => {});
   };
   const standings = computeDoublesStandings(entries, matches);
   const color = groupColor(groupId);
@@ -367,7 +528,7 @@ export function DoublesSchedule({
         </ol>
       </Card>
 
-      <StandingsCard rows={standings} diffLabel="Hiệu số ván" />
+      <StandingsCard rows={standings} diffLabel="Hiệu số ván" kind="doubles" />
 
       <MatchScheduleSection
         title="Lịch thi đấu vòng bảng"
@@ -525,6 +686,17 @@ function DoublesMatchCard({
               disabled={pending}
               onSave={save}
             />
+            <AiSingleMatchButton
+              matchContext={{
+                id: match.id,
+                type: "doubles",
+                bestOf: match.bestOf,
+                sideA: match.pairA.label,
+                sideB: match.pairB.label,
+              }}
+              onApply={(sets) => save({ sets })}
+              disabled={pending}
+            />
             {(match.sets.length > 0 || status !== "scheduled") && (
               <ClearResultButton
                 disabled={pending}
@@ -572,6 +744,7 @@ export function TeamSchedule({
   const [matches, setMatches] = useState(initialMatches);
   const handleMatchUpdated = (updated: TeamMatchResolved) => {
     setMatches((prev) => prev.map((m) => (m.id === updated.id ? updated : m)));
+    tryAutoReseedKo("teams").catch(() => {});
   };
   const standings = computeTeamStandings(entries, matches);
   const color = groupColor(groupId);
@@ -605,7 +778,7 @@ export function TeamSchedule({
         </ol>
       </Card>
 
-      <StandingsCard rows={standings} diffLabel="Hiệu số trận cá nhân" />
+      <StandingsCard rows={standings} diffLabel="Hiệu số trận cá nhân" kind="team" />
 
       <MatchScheduleSection
         title="Lịch thi đấu vòng bảng"
@@ -909,6 +1082,35 @@ function TeamMatchCard({
           {!readOnly && <SaveIndicator state={saveState} error={saveError} />}
         </div>
         <div className="flex items-center gap-2">
+          {!readOnly && (
+            <AiSingleMatchButton
+              matchContext={{
+                id: match.id,
+                type: "team",
+                bestOf: 3,
+                sideA: match.teamA.name,
+                sideB: match.teamB.name,
+                subMatches: match.individual.map((s) => ({
+                  label: s.label,
+                  kind: s.kind,
+                  bestOf: s.bestOf,
+                })),
+              }}
+              onApply={(_sets, subMatches) => {
+                if (subMatches) {
+                  applySubs((prev) =>
+                    prev.map((existing) => {
+                      const aiSub = subMatches.find((s) => s.label === existing.label);
+                      if (!aiSub) return existing;
+                      return { ...existing, sets: aiSub.sets };
+                    }),
+                  );
+                  scheduleSave();
+                }
+              }}
+              disabled={pending}
+            />
+          )}
           {!readOnly && (
             <LiveToggleButton
               live={live}
@@ -1331,11 +1533,27 @@ function TeamSubMatchRow({
       <div className="mt-1.5 flex items-center justify-between gap-2">
         <SetScores sets={sub.sets} />
         {!readOnly && (
-          <SubSetsEditor
-            sub={sub}
-            onSetsChange={(sets) => onChange({ sets })}
-            onBestOfChange={(bestOf) => onChange({ bestOf })}
-          />
+          <div className="flex items-center gap-1">
+            <AiSingleMatchButton
+              matchContext={{
+                id: sub.id,
+                type: "doubles",
+                bestOf: sub.bestOf,
+                sideA: sub.playersA.length > 0
+                  ? sub.playersA.map((p) => p.name).join(" / ")
+                  : "Đội A",
+                sideB: sub.playersB.length > 0
+                  ? sub.playersB.map((p) => p.name).join(" / ")
+                  : "Đội B",
+              }}
+              onApply={(sets) => onChange({ sets })}
+            />
+            <SubSetsEditor
+              sub={sub}
+              onSetsChange={(sets) => onChange({ sets })}
+              onBestOfChange={(bestOf) => onChange({ bestOf })}
+            />
+          </div>
         )}
       </div>
     </li>
@@ -1393,6 +1611,13 @@ function SubSetsEditor({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Sửa tỉ số · {sub.label}</DialogTitle>
+          {(sub.playersA.length > 0 || sub.playersB.length > 0) && (
+            <p className="text-sm font-medium text-foreground">
+              {sub.playersA.map((p) => p.name).join(" / ") || "—"}
+              {" vs "}
+              {sub.playersB.map((p) => p.name).join(" / ") || "—"}
+            </p>
+          )}
           <DialogDescription>
             Thắng {Math.ceil(sub.bestOf / 2)}/{sub.bestOf} ván · nhập tỉ số từng ván.
           </DialogDescription>
@@ -1933,10 +2158,12 @@ function EditDoublesMatchDialog({
 
 /* ---------- Knockout ---------- */
 
-const ROUND_ORDER: Array<KnockoutMatch["round"]> = ["qf", "sf", "f"];
+type KoMatch = DoublesKoResolved | TeamKoResolved;
+
+const ROUND_ORDER: KoRound[] = ["qf", "sf", "f"];
 
 const ROUND_STYLE: Record<
-  KnockoutMatch["round"],
+  KoRound,
   { chip: string; border: string; bg: string; accent: string }
 > = {
   qf: {
@@ -1959,209 +2186,577 @@ const ROUND_STYLE: Record<
   },
 };
 
+async function seedKo(kind: Content): Promise<void> {
+  const res = await fetch(`/api/${kind === "doubles" ? "doubles" : "teams"}/ko/seed`, { method: "POST" });
+  if (!res.ok) {
+    const body = await res.json();
+    throw new Error(body.error ?? "Seed failed");
+  }
+}
+
+async function deleteKo(kind: Content): Promise<void> {
+  const res = await fetch(`/api/${kind === "doubles" ? "doubles" : "teams"}/ko`, { method: "DELETE" });
+  if (!res.ok) {
+    const body = await res.json();
+    throw new Error(body.error ?? "Delete failed");
+  }
+}
+
+async function patchKoMatch(kind: Content, id: string, body: Record<string, unknown>) {
+  const res = await fetch(`/api/${kind === "doubles" ? "doubles" : "teams"}/ko/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.error ?? "Patch failed");
+  return json.data;
+}
+
 function KnockoutSection({
   kind,
   matches,
-  note,
+  teams,
 }: {
   kind: Content;
-  matches: KnockoutMatch[];
-  note?: string;
+  matches: KoMatch[];
+  teams?: TeamWithNames[];
 }) {
+  const router = useRouter();
+  const [seeding, setSeeding] = useState(false);
+  const [resetting, setResetting] = useState(false);
+  const hasBracket = matches.length > 0;
+
+  const handleSeed = async () => {
+    setSeeding(true);
+    try {
+      await seedKo(kind);
+      router.refresh();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Lỗi seed");
+    } finally {
+      setSeeding(false);
+    }
+  };
+
+  const handleReseed = async () => {
+    setSeeding(true);
+    try {
+      await deleteKo(kind);
+      await seedKo(kind);
+      router.refresh();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Lỗi cập nhật");
+    } finally {
+      setSeeding(false);
+    }
+  };
+
+  const handleReset = async () => {
+    setResetting(true);
+    try {
+      await deleteKo(kind);
+      router.refresh();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Lỗi xoá");
+    } finally {
+      setResetting(false);
+    }
+  };
+
   return (
     <div>
       <SectionHeader
         title="Vòng loại trực tiếp"
-        subtitle={`${matches.length} trận · ${ROUND_ORDER.filter((r) => matches.some((m) => m.round === r)).map((r) => ROUND_LABEL[r]).join(" → ")}`}
-      />
-      <div className="flex flex-col gap-5">
-        {ROUND_ORDER.map((round) => {
-          const list = matches.filter((m) => m.round === round);
-          if (list.length === 0) return null;
-          const s = ROUND_STYLE[round];
-          return (
-            <div key={round} className={`rounded-xl border p-3 ${s.border} ${s.bg}`}>
-              <div className="mb-3 flex items-center gap-2">
-                <span className={`rounded-md px-2 py-0.5 text-sm font-semibold ${s.chip}`}>
-                  {ROUND_LABEL[round]}
-                </span>
-                <span className="text-sm text-muted-foreground">{list.length} trận</span>
-              </div>
-              <div className="flex flex-col gap-2">
-                {list.map((m, i) => (
-                  <KnockoutMatchCard key={m.id} match={m} index={i + 1} kind={kind} />
-                ))}
-              </div>
+        subtitle={hasBracket
+          ? `${matches.length} trận · ${ROUND_ORDER.filter((r) => matches.some((m) => m.round === r)).map((r) => ROUND_LABEL[r]).join(" → ")}`
+          : "Chưa tạo bracket"}
+        action={
+          hasBracket ? (
+            <div className="flex gap-1">
+              <Button size="sm" onClick={handleReseed} disabled={seeding || resetting}>
+                {seeding ? <Loader2 className="animate-spin" /> : <Trophy />}
+                Cập nhật BXH
+              </Button>
+              <Button size="sm" variant="outline" onClick={handleReset} disabled={resetting || seeding}>
+                {resetting ? <Loader2 className="animate-spin" /> : <Trash2 />}
+                Xoá
+              </Button>
             </div>
-          );
-        })}
-      </div>
-      {note && (
-        <p className="mt-3 rounded-md bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-300">
-          ⚠️ {note}
-        </p>
+          ) : (
+            <Button size="sm" onClick={handleSeed} disabled={seeding}>
+              {seeding ? <Loader2 className="animate-spin" /> : <Trophy />}
+              Tạo bracket từ BXH
+            </Button>
+          )
+        }
+      />
+      {hasBracket && <KoFinalRanking matches={matches} />}
+      {hasBracket && (
+        <div className="flex flex-col gap-5">
+          {ROUND_ORDER.map((round) => {
+            const list = matches.filter((m) => m.round === round);
+            if (list.length === 0) return null;
+            const s = ROUND_STYLE[round];
+            return (
+              <div key={round} className={`rounded-xl border p-3 ${s.border} ${s.bg}`}>
+                <div className="mb-3 flex items-center gap-2">
+                  <span className={`rounded-md px-2 py-0.5 text-sm font-semibold ${s.chip}`}>
+                    {ROUND_LABEL[round]}
+                  </span>
+                  <span className="text-sm text-muted-foreground">{list.length} trận</span>
+                </div>
+                <div className="flex flex-col gap-2">
+                  {list.map((m, i) => (
+                    <KoMatchCard key={m.id} match={m} index={i + 1} kind={kind} teams={teams} />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       )}
     </div>
   );
 }
 
-function KnockoutMatchCard({
+function koEntryName(m: KoMatch, side: "a" | "b"): string | null {
+  if (isDoublesKo(m)) {
+    return side === "a" ? (m.entryA?.label ?? null) : (m.entryB?.label ?? null);
+  }
+  const tm = m as TeamKoResolved;
+  return side === "a" ? (tm.entryA?.name ?? null) : (tm.entryB?.name ?? null);
+}
+
+function koWinnerName(m: KoMatch): string | null {
+  if (isDoublesKo(m)) return m.winner?.label ?? null;
+  return (m as TeamKoResolved).winner?.name ?? null;
+}
+
+function koLoserName(m: KoMatch): string | null {
+  const winner = isDoublesKo(m) ? m.winner?.id : (m as TeamKoResolved).winner?.id;
+  if (!winner) return null;
+  if (isDoublesKo(m)) {
+    return m.entryA?.id === winner ? (m.entryB?.label ?? null) : (m.entryA?.label ?? null);
+  }
+  const tm = m as TeamKoResolved;
+  return tm.entryA?.id === winner ? (tm.entryB?.name ?? null) : (tm.entryA?.name ?? null);
+}
+
+const MEDAL_STYLE = [
+  { emoji: "🥇", bg: "bg-yellow-500/10 border-yellow-500/30", text: "text-yellow-700 dark:text-yellow-400" },
+  { emoji: "🥈", bg: "bg-gray-200/50 border-gray-300/50 dark:bg-gray-700/30 dark:border-gray-600/30", text: "text-gray-700 dark:text-gray-300" },
+  { emoji: "🥉", bg: "bg-amber-600/10 border-amber-600/20", text: "text-amber-700 dark:text-amber-500" },
+];
+
+function KoFinalRanking({ matches }: { matches: KoMatch[] }) {
+  const final = matches.find((m) => m.round === "f");
+  if (!final || (final.status !== "done" && final.status !== "forfeit")) return null;
+
+  const first = koWinnerName(final);
+  const second = koLoserName(final);
+  const sfMatches = matches.filter((m) => m.round === "sf");
+  const thirds = sfMatches.map((m) => koLoserName(m)).filter(Boolean) as string[];
+
+  if (!first || !second) return null;
+
+  const rows: Array<{ rank: string; name: string; style: typeof MEDAL_STYLE[number] }> = [
+    { rank: "Nhất", name: first, style: MEDAL_STYLE[0] },
+    { rank: "Nhì", name: second, style: MEDAL_STYLE[1] },
+    ...thirds.map((name) => ({ rank: "Ba", name, style: MEDAL_STYLE[2] })),
+  ];
+
+  return (
+    <div className="mb-4 rounded-xl border border-yellow-500/30 bg-gradient-to-b from-yellow-500/10 to-transparent p-4">
+      <div className="mb-3 flex items-center gap-2">
+        <Trophy className="size-4 text-yellow-600" />
+        <span className="text-sm font-semibold">Kết quả chung cuộc</span>
+      </div>
+      <div className="flex flex-col gap-2">
+        {rows.map((r, i) => (
+          <div key={i} className={`flex items-center gap-3 rounded-lg border px-3 py-2 ${r.style.bg}`}>
+            <span className="text-lg">{r.style.emoji}</span>
+            <div className="min-w-0 flex-1">
+              <span className={`text-sm font-semibold ${r.style.text}`}>{r.rank}</span>
+              <span className="ml-2 text-sm">{r.name}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function isDoublesKo(m: KoMatch): m is DoublesKoResolved {
+  return "sets" in m;
+}
+
+function KoMatchCard({
   match,
   index,
   kind,
+  teams,
 }: {
-  match: KnockoutMatch;
+  match: KoMatch;
   index: number;
   kind: Content;
+  teams?: TeamWithNames[];
 }) {
-  const [status, setStatus] = useState<MatchStatus>(match.status);
-  const [roster, setRoster] = useState<TeamRoster>({});
-  const locked = status === "done";
-  const nameA = match.entryA ?? match.labelA;
-  const nameB = match.entryB ?? match.labelB;
-  const placeholderA = !match.entryA;
-  const placeholderB = !match.entryB;
+  const router = useRouter();
+  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [saveError, setSaveError] = useState<string | null>(null);
 
-  const isTeam = kind === "teams";
-  const teamA = match.entryA ? MOCK_TEAMS.find((t) => t.name === match.entryA) : undefined;
-  const teamB = match.entryB ? MOCK_TEAMS.find((t) => t.name === match.entryB) : undefined;
-  const canAssign = isTeam && !!teamA && !!teamB;
-  const assigned = canAssign && rosterAssigned(roster);
-  let scoreA = 0;
-  let scoreB = 0;
-  if (isTeam && match.individual) {
-    for (const im of match.individual) {
-      const { a, b } = setsSummary(im.sets);
-      if (im.sets.length > 0) {
-        if (a > b) scoreA += 1;
-        else if (b > a) scoreB += 1;
-      }
-    }
-  } else {
-    const s = setsSummary(match.sets);
-    scoreA = s.a;
-    scoreB = s.b;
-  }
-  const aWon = locked && scoreA > scoreB;
-  const bWon = locked && scoreB > scoreA;
+  const isDoubles = isDoublesKo(match);
+  const nameA = isDoubles
+    ? (match.entryA?.label ?? match.labelA)
+    : ((match as TeamKoResolved).entryA?.name ?? match.labelA);
+  const nameB = isDoubles
+    ? (match.entryB?.label ?? match.labelB)
+    : ((match as TeamKoResolved).entryB?.name ?? match.labelB);
+  const placeholderA = isDoubles ? !match.entryA : !(match as TeamKoResolved).entryA;
+  const placeholderB = isDoubles ? !match.entryB : !(match as TeamKoResolved).entryB;
+
+  const scoreA = isDoubles ? match.setsA : (match as TeamKoResolved).scoreA;
+  const scoreB = isDoubles ? match.setsB : (match as TeamKoResolved).scoreB;
+  const done = match.status === "done" || match.status === "forfeit";
+  const aWon = done && scoreA > scoreB;
+  const bWon = done && scoreB > scoreA;
   const accent = ROUND_STYLE[match.round].accent;
+  const bestOf = isDoubles ? match.bestOf : 0;
+
+  const save = async (body: Record<string, unknown>) => {
+    setSaveState("saving");
+    setSaveError(null);
+    try {
+      await patchKoMatch(kind, match.id, body);
+      setSaveState("saved");
+      router.refresh();
+    } catch (e) {
+      setSaveState("error");
+      const msg = e instanceof Error ? e.message : "Lỗi";
+      setSaveError(msg);
+      toast.error(msg);
+    }
+  };
 
   return (
-    <Card className={`border-l-4 p-3 ${accent} ${locked ? "border-green-500/30 bg-green-500/5" : ""}`}>
+    <Card className={`border-l-4 p-3 ${accent} ${done ? "border-green-500/30 bg-green-500/5" : ""}`}>
       <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
         <div className="flex items-center gap-2">
           <span className="font-medium text-foreground">
             {ROUND_LABEL[match.round]} {index}
           </span>
-          {match.table != null && <span>· Bàn {match.table}</span>}
-          <span>· thắng {Math.ceil(match.bestOf / 2)}/{match.bestOf} ván</span>
+          {isDoubles && bestOf > 0 && <span>· thắng {Math.ceil(bestOf / 2)}/{bestOf} ván</span>}
+          {saveState === "saving" && <Loader2 className="size-3 animate-spin" />}
+          {saveState === "saved" && <CheckCircle2 className="size-3 text-green-600" />}
         </div>
-        <StatusBadge status={status} />
+        <StatusBadge status={match.status} />
       </div>
+
+      {saveError && (
+        <div className="mb-2 rounded bg-destructive/10 px-2 py-1 text-xs text-destructive">
+          <X className="mr-1 inline size-3" /> {saveError}
+        </div>
+      )}
 
       <div className="flex items-center gap-3">
         <div className="min-w-0 flex-1 space-y-0.5 text-sm">
-          <div
-            className={`truncate ${aWon ? "font-semibold" : ""} ${placeholderA ? "italic text-muted-foreground" : ""}`}
-          >
+          <div className={`truncate ${aWon ? "font-semibold" : ""} ${placeholderA ? "italic text-muted-foreground" : ""}`}>
             {nameA}
           </div>
-          <div
-            className={`truncate ${bWon ? "font-semibold" : ""} ${placeholderB ? "italic text-muted-foreground" : ""}`}
-          >
+          <div className={`truncate ${bWon ? "font-semibold" : ""} ${placeholderB ? "italic text-muted-foreground" : ""}`}>
             {nameB}
           </div>
         </div>
         <div className="flex shrink-0 flex-col items-end text-xl font-semibold tabular-nums leading-tight">
           <span className={aWon ? "" : "text-muted-foreground"}>
-            {locked || scoreA + scoreB > 0 ? scoreA : "–"}
+            {done || scoreA + scoreB > 0 ? scoreA : "–"}
           </span>
           <span className={bWon ? "" : "text-muted-foreground"}>
-            {locked || scoreA + scoreB > 0 ? scoreB : "–"}
+            {done || scoreA + scoreB > 0 ? scoreB : "–"}
           </span>
         </div>
       </div>
 
-      {isTeam && match.individual && (
-        <>
-          {!canAssign && (
-            <div className="mt-2 rounded-md bg-muted px-2 py-1.5 text-sm text-muted-foreground">
-              ⌛ Cần xác định đội thắng vòng trước
-            </div>
-          )}
-          {canAssign && !assigned && (
-            <div className="mt-2 flex items-center justify-between rounded-md bg-amber-500/10 px-2 py-1.5 text-sm">
-              <span className="text-amber-700 dark:text-amber-300">⚠ Chưa gán đội hình</span>
-              <AssignRosterDialog
-                teamA={teamA!}
-                teamB={teamB!}
-                roster={roster}
-                onSave={setRoster}
-              />
-            </div>
-          )}
-          <details className="group mt-2" open={assigned}>
-            <summary className="flex cursor-pointer list-none items-center justify-between rounded-md bg-muted/50 px-2 py-1.5 text-sm text-muted-foreground">
-              <span>Chi tiết 3 lượt {assigned ? "" : "(slot)"}</span>
-              <div className="flex items-center gap-2">
-                {assigned && (
-                  <AssignRosterDialog
-                    teamA={teamA!}
-                    teamB={teamB!}
-                    roster={roster}
-                    onSave={setRoster}
-                    trigger={
-                      <Button size="xs" variant="ghost" type="button">
-                        Sửa đội hình
-                      </Button>
-                    }
-                  />
-                )}
-                <ChevronRight className="size-3.5 transition-transform group-open:rotate-90" />
-              </div>
-            </summary>
-            <ul className="mt-2 flex flex-col gap-1.5">
-              {match.individual.map((im, i) => {
-                const lineup = TEAM_MATCH_TEMPLATE[i];
-                const names = lineupNames(lineup, roster);
-                return (
-                  <IndividualMatchRow
-                    key={im.id}
-                    match={{ ...im, playerA: names.a, playerB: names.b }}
-                    placeholder={names.placeholder}
-                    slotHint={
-                      lineup.kind === "single"
-                        ? `${lineup.slot} vs ${lineup.oppSlot}`
-                        : `${lineup.slots.join("+")} vs ${lineup.oppSlots.join("+")}`
-                    }
-                  />
-                );
-              })}
-            </ul>
-          </details>
-        </>
-      )}
-
-      <div className="mt-2 flex items-center justify-between gap-2">
-        <SetScores sets={isTeam ? [] : match.sets} />
-        <div className="flex shrink-0 items-center gap-1">
-          {!isTeam && (
-            <EditMatchDialog
-              title={`${ROUND_LABEL[match.round]} ${index}`}
-              participants={`${nameA}  vs  ${nameB}`}
+      {isDoubles && (
+        <div className="mt-2 flex items-center justify-between gap-2">
+          <SetScores sets={match.sets} />
+          <div className="flex shrink-0 items-center gap-1">
+            <KoSetsEditor
+              matchId={match.id}
+              kind={kind}
               sets={match.sets}
               bestOf={match.bestOf}
-              table={match.table}
-              disabled={locked}
+              disabled={done || placeholderA || placeholderB}
+              nameA={nameA}
+              nameB={nameB}
+              onSaved={() => router.refresh()}
             />
-          )}
-          <LockToggleButton
-            locked={locked}
-            onToggle={() => setStatus(locked ? "scheduled" : "done")}
-          />
+            <LiveToggleButton
+              live={match.status === "live"}
+              disabled={placeholderA || placeholderB}
+              onToggle={() => save({ status: match.status === "live" ? "scheduled" : "live" })}
+            />
+            <LockToggleButton
+              locked={done}
+              disabled={placeholderA || placeholderB}
+              onToggle={() => save({ status: done ? "scheduled" : "done" })}
+            />
+          </div>
         </div>
-      </div>
+      )}
+
+      {!isDoubles && (match as TeamKoResolved).entryA && (match as TeamKoResolved).entryB && (
+        <>
+          <TeamKoSubMatches
+            match={match as TeamKoResolved}
+            teams={teams}
+            onSaved={() => router.refresh()}
+          />
+          <div className="mt-2 flex items-center justify-end gap-1">
+            <LiveToggleButton
+              live={match.status === "live"}
+              onToggle={() => save({ status: match.status === "live" ? "scheduled" : "live" })}
+            />
+            <LockToggleButton
+              locked={done}
+              onToggle={() => save({ status: done ? "scheduled" : "done" })}
+            />
+          </div>
+        </>
+      )}
     </Card>
+  );
+}
+
+function TeamKoSubMatches({
+  match,
+  teams,
+  onSaved,
+}: {
+  match: TeamKoResolved;
+  teams?: TeamWithNames[];
+  onSaved: () => void;
+}) {
+  const [subs, setSubs] = useState<SubMatchResolved[]>(match.individual);
+  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const inFlight = useRef(false);
+  const changedSinceInFlight = useRef(false);
+  const subsRef = useRef(subs);
+  useEffect(() => { subsRef.current = subs; }, [subs]);
+
+  const teamA = teams?.find((t) => t.id === match.entryA?.id);
+  const teamB = teams?.find((t) => t.id === match.entryB?.id);
+  const teamAPlayers = teamA?.members ?? [];
+  const teamBPlayers = teamB?.members ?? [];
+
+  const doSave = async (nextSubs: SubMatchResolved[]) => {
+    inFlight.current = true;
+    changedSinceInFlight.current = false;
+    setSaveState("saving");
+    try {
+      await patchKoMatch("teams", match.id, {
+        individual: nextSubs.map(subMatchToPatch),
+      });
+      if (changedSinceInFlight.current) {
+        inFlight.current = false;
+        scheduleSave();
+        return;
+      }
+      setSaveState("saved");
+      onSaved();
+    } catch (e) {
+      setSaveState("error");
+      toast.error(e instanceof Error ? e.message : "Lỗi");
+    } finally {
+      inFlight.current = false;
+    }
+  };
+
+  const scheduleSave = () => {
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    setSaveState("saving");
+    saveTimer.current = setTimeout(() => {
+      if (inFlight.current) {
+        changedSinceInFlight.current = true;
+        return;
+      }
+      void doSave(subsRef.current);
+    }, 600);
+  };
+
+  useEffect(() => {
+    return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
+  }, []);
+
+  // Only save for player/score changes, not label/kind edits
+  const SAVE_KEYS = new Set(["playersA", "playersB", "sets", "bestOf"]);
+
+  const applySubs = (updater: (prev: SubMatchResolved[]) => SubMatchResolved[]) => {
+    setSubs((prev) => {
+      const next = updater(prev);
+      subsRef.current = next;
+      return next;
+    });
+  };
+
+  const updateSub = (subId: string, patch: Partial<SubMatchResolved>) => {
+    applySubs((prev) => prev.map((s) => (s.id === subId ? { ...s, ...patch } : s)));
+    if (Object.keys(patch).some((k) => SAVE_KEYS.has(k))) {
+      scheduleSave();
+    }
+  };
+
+  const addSub = () => {
+    applySubs((prev) => [
+      ...prev,
+      {
+        id: `${match.id}-${nanoid(6)}`,
+        label: `Đơn ${prev.length}`,
+        kind: "singles" as const,
+        playersA: [],
+        playersB: [],
+        bestOf: 3 as const,
+        sets: [],
+      },
+    ]);
+    scheduleSave();
+  };
+
+  const removeSub = (subId: string) => {
+    applySubs((prev) => prev.filter((s) => s.id !== subId));
+    scheduleSave();
+  };
+
+  return (
+    <details className="group mt-2" open>
+      <summary className="flex cursor-pointer list-none items-center justify-between rounded-md bg-muted/50 px-2 py-1.5 text-sm text-muted-foreground">
+        <span className="flex items-center gap-2">
+          Chi tiết {subs.length} lượt
+          {saveState === "saving" && <Loader2 className="size-3 animate-spin" />}
+          {saveState === "saved" && <CheckCircle2 className="size-3 text-green-600" />}
+        </span>
+        <ChevronRight className="size-3.5 transition-transform group-open:rotate-90" />
+      </summary>
+      <ul className="mt-2 flex flex-col gap-1.5">
+        {subs.map((sub) => (
+          <TeamSubMatchRow
+            key={sub.id}
+            sub={sub}
+            teamAPlayers={teamAPlayers}
+            teamBPlayers={teamBPlayers}
+            canDelete={subs.length > 1}
+            onChange={(patch: Partial<SubMatchResolved>) => updateSub(sub.id, patch)}
+            onDelete={() => removeSub(sub.id)}
+          />
+        ))}
+      </ul>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className="mt-2 w-full"
+        onClick={addSub}
+      >
+        <Plus /> Thêm lượt
+      </Button>
+    </details>
+  );
+}
+
+function KoSetsEditor({
+  matchId,
+  kind,
+  sets: initialSets,
+  bestOf,
+  disabled,
+  nameA,
+  nameB,
+  onSaved,
+}: {
+  matchId: string;
+  kind: Content;
+  sets: SetScore[];
+  bestOf: BestOf;
+  disabled?: boolean;
+  nameA: string;
+  nameB: string;
+  onSaved: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const minRows = Math.ceil(bestOf / 2);
+  const initialRows: Array<{ a: string; b: string }> =
+    initialSets.length > 0
+      ? initialSets.map((s) => ({ a: String(s.a), b: String(s.b) }))
+      : Array.from({ length: minRows }, () => ({ a: "", b: "" }));
+  const [rows, setRows] = useState(initialRows);
+  const [saving, setSaving] = useState(false);
+
+  const reset = () => setRows(initialRows);
+  const updateRow = (i: number, side: "a" | "b", v: string) =>
+    setRows((rs) => rs.map((r, idx) => (idx === i ? { ...r, [side]: v } : r)));
+  const addRow = () => setRows((rs) => [...rs, { a: "", b: "" }]);
+  const removeRow = (i: number) => setRows((rs) => rs.filter((_, idx) => idx !== i));
+
+  const apply = async () => {
+    const parsed = parseSetsRows(rows);
+    setSaving(true);
+    try {
+      await patchKoMatch(kind, matchId, { sets: parsed });
+      setOpen(false);
+      onSaved();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Lỗi");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (v) reset(); }}>
+      <DialogTrigger
+        disabled={disabled}
+        render={
+          <Button size="icon-xs" variant="ghost" aria-label="Sửa tỉ số" disabled={disabled} className="bg-muted hover:bg-muted/70" />
+        }
+      >
+        <Pencil />
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Sửa tỉ số · {ROUND_LABEL[kind === "doubles" ? "qf" : "sf"]}</DialogTitle>
+          <p className="text-sm font-medium text-foreground">{nameA} vs {nameB}</p>
+          <DialogDescription>
+            Thắng {Math.ceil(bestOf / 2)}/{bestOf} ván · nhập tỉ số từng ván.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-2">
+          <Label>Tỉ số các ván</Label>
+          {rows.map((row, i) => (
+            <div key={i} className="grid grid-cols-[3rem_1fr_auto_1fr_auto] items-center gap-2">
+              <span className="text-sm text-muted-foreground">Ván {i + 1}</span>
+              <Input value={row.a} onChange={(e) => updateRow(i, "a", e.target.value)} inputMode="numeric" />
+              <span className="text-muted-foreground">-</span>
+              <Input value={row.b} onChange={(e) => updateRow(i, "b", e.target.value)} inputMode="numeric" />
+              <Button type="button" size="icon-sm" variant="ghost" aria-label="Xoá ván" onClick={() => removeRow(i)} disabled={rows.length <= 1} className="bg-destructive/10 hover:bg-destructive/20">
+                <Trash2 className="text-destructive" />
+              </Button>
+            </div>
+          ))}
+          <Button type="button" variant="outline" size="sm" onClick={addRow}>
+            <Plus /> Thêm ván
+          </Button>
+        </div>
+        <DialogFooter>
+          <DialogClose render={<Button variant="outline" type="button" disabled={saving} />}>Huỷ</DialogClose>
+          <Button type="button" onClick={apply} disabled={saving}>
+            {saving ? <Loader2 className="animate-spin" /> : null}
+            Áp dụng
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 

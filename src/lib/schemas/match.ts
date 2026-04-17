@@ -14,16 +14,18 @@ export const SubMatchSchema = z
     id: z.string().min(1),
     label: z.string().min(1).max(50),
     kind: z.enum(["singles", "doubles"]),
-    playersA: z.array(IdSchema).min(1).max(2),
-    playersB: z.array(IdSchema).min(1).max(2),
+    playersA: z.array(IdSchema).max(2),
+    playersB: z.array(IdSchema).max(2),
     bestOf: BestOfSchema,
     sets: z.array(SetScoreSchema).max(5),
   })
   .refine(
-    (s) =>
-      s.kind === "singles"
-        ? s.playersA.length === 1 && s.playersB.length === 1
-        : s.playersA.length === 2 && s.playersB.length === 2,
+    (s) => {
+      const limit = s.kind === "singles" ? 1 : 2;
+      const aOk = s.playersA.length === 0 || s.playersA.length === limit;
+      const bOk = s.playersB.length === 0 || s.playersB.length === limit;
+      return aOk && bOk;
+    },
     { message: "Số VĐV không khớp loại sub-match" },
   )
   .refine((s) => s.sets.length <= s.bestOf, {

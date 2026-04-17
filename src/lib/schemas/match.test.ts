@@ -44,6 +44,14 @@ describe("SubMatchSchema", () => {
       SubMatchSchema.parse({ ...valid, playersA: ["t01"] }),
     ).toThrow(/Số VĐV/);
   });
+  test("accepts empty players (draft state)", () => {
+    const draft = { ...valid, playersA: [], playersB: [] };
+    expect(SubMatchSchema.parse(draft).playersA).toEqual([]);
+  });
+  test("accepts one side empty (partial assignment)", () => {
+    const partial = { ...valid, playersB: [] };
+    expect(SubMatchSchema.parse(partial).playersB).toEqual([]);
+  });
   test("rejects sets > bestOf", () => {
     const sets = Array(6).fill({ a: 11, b: 0 });
     expect(() => SubMatchSchema.parse({ ...valid, sets })).toThrow();
