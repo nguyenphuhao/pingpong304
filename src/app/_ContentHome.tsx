@@ -2,22 +2,19 @@ import { Shield, Swords, Trophy, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { GroupStageTabs } from "./_publicGroup";
 import { PublicKnockoutSection } from "./_publicKnockout";
-import {
-  MOCK_DOUBLES_KO,
-  MOCK_TEAM_KO,
-  TEAM_FINAL_NOTE,
-} from "./admin/_mock";
 import type { GroupResolved } from "@/lib/schemas/group";
+import type { DoublesKoResolved, TeamKoResolved } from "@/lib/schemas/knockout";
 
 export function ContentHome({
   kind,
   groups,
+  knockout,
 }: {
   kind: "doubles" | "teams";
   groups: GroupResolved[];
+  knockout: DoublesKoResolved[] | TeamKoResolved[];
 }) {
   const isDoubles = kind === "doubles";
-  const ko = isDoubles ? MOCK_DOUBLES_KO : MOCK_TEAM_KO;
 
   const titleColor = isDoubles
     ? "text-blue-600 dark:text-blue-400"
@@ -63,8 +60,7 @@ export function ContentHome({
       >
         <PublicKnockoutSection
           kind={kind}
-          matches={ko}
-          note={isDoubles ? undefined : TEAM_FINAL_NOTE}
+          matches={knockout}
         />
       </Section>
 

@@ -1,14 +1,16 @@
-import {
-  ROUND_LABEL,
-  TEAM_MATCH_TEMPLATE,
-  type KnockoutMatch,
-  type SetScore,
-} from "./admin/_mock";
+import type {
+  DoublesKoResolved,
+  TeamKoResolved,
+  KoRound,
+} from "@/lib/schemas/knockout";
+import { ROUND_LABEL } from "@/lib/schemas/knockout";
 
-const ROUND_ORDER: Array<KnockoutMatch["round"]> = ["qf", "sf", "f"];
+type KoMatch = DoublesKoResolved | TeamKoResolved;
+
+const ROUND_ORDER: KoRound[] = ["qf", "sf", "f"];
 
 const ROUND_STYLE: Record<
-  KnockoutMatch["round"],
+  KoRound,
   { chip: string; border: string; bg: string; accent: string }
 > = {
   qf: {
@@ -31,25 +33,23 @@ const ROUND_STYLE: Record<
   },
 };
 
-function setsSummary(sets: SetScore[]) {
-  let a = 0;
-  let b = 0;
-  for (const s of sets) {
-    if (s.a > s.b) a += 1;
-    else if (s.b > s.a) b += 1;
-  }
-  return { a, b };
+function isDoublesKo(m: KoMatch): m is DoublesKoResolved {
+  return "sets" in m;
 }
 
 export function PublicKnockoutSection({
   kind,
   matches,
-  note,
 }: {
   kind: "doubles" | "teams";
-  matches: KnockoutMatch[];
-  note?: string;
+  matches: KoMatch[];
 }) {
+  if (matches.length === 0) {
+    return (
+      <p className="text-sm text-muted-foreground">Chưa có lịch vòng loại trực tiếp.</p>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-4">
       {ROUND_ORDER.map((round) => {
@@ -72,11 +72,6 @@ export function PublicKnockoutSection({
           </div>
         );
       })}
-      {note && (
-        <p className="rounded-md bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-300">
-          ⚠️ {note}
-        </p>
-      )}
     </div>
   );
 }
@@ -86,35 +81,28 @@ function PublicKOCard({
   index,
   kind,
 }: {
-  match: KnockoutMatch;
+  match: KoMatch;
   index: number;
   kind: "doubles" | "teams";
 }) {
-  const isTeam = kind === "teams";
+  const isDoubles = isDoublesKo(match);
   const accent = ROUND_STYLE[match.round].accent;
-  const nameA = match.entryA ?? match.labelA;
-  const nameB = match.entryB ?? match.labelB;
-  const placeholderA = !match.entryA;
-  const placeholderB = !match.entryB;
-  const done = match.status === "done";
 
-  let scoreA = 0;
-  let scoreB = 0;
-  if (isTeam && match.individual) {
-    for (const im of match.individual) {
-      const { a, b } = setsSummary(im.sets);
-      if (im.sets.length > 0) {
-        if (a > b) scoreA += 1;
-        else if (b > a) scoreB += 1;
-      }
-    }
-  } else {
-    const s = setsSummary(match.sets);
-    scoreA = s.a;
-    scoreB = s.b;
-  }
+  const nameA = isDoubles
+    ? (match.entryA?.label ?? match.labelA)
+    : ((match as TeamKoResolved).entryA?.name ?? match.labelA);
+  const nameB = isDoubles
+    ? (match.entryB?.label ?? match.labelB)
+    : ((match as TeamKoResolved).entryB?.name ?? match.labelB);
+  const placeholderA = isDoubles ? !match.entryA : !(match as TeamKoResolved).entryA;
+  const placeholderB = isDoubles ? !match.entryB : !(match as TeamKoResolved).entryB;
+
+  const scoreA = isDoubles ? match.setsA : (match as TeamKoResolved).scoreA;
+  const scoreB = isDoubles ? match.setsB : (match as TeamKoResolved).scoreB;
+  const done = match.status === "done" || match.status === "forfeit";
   const aWon = done && scoreA > scoreB;
   const bWon = done && scoreB > scoreA;
+  const bestOf = isDoubles ? match.bestOf : 0;
 
   return (
     <div className={`rounded-lg border-l-4 border bg-card p-3 ${accent}`}>
@@ -123,12 +111,17 @@ function PublicKOCard({
           <span className="font-medium text-foreground">
             {ROUND_LABEL[match.round]} {index}
           </span>
-          {match.table != null && <span>· Bàn {match.table}</span>}
-          <span>· thắng {Math.ceil(match.bestOf / 2)}/{match.bestOf} ván</span>
+          {isDoubles && bestOf > 0 && (
+            <span>· thắng {Math.ceil(bestOf / 2)}/{bestOf} ván</span>
+          )}
         </div>
         {done ? (
           <span className="rounded-full bg-green-500/15 px-2 py-0.5 text-xs font-medium text-green-700 dark:text-green-400">
             Đã xong
+          </span>
+        ) : match.status === "live" ? (
+          <span className="rounded-full bg-orange-500/15 px-2 py-0.5 text-xs font-medium text-orange-700 dark:text-orange-400">
+            Đang đấu
           </span>
         ) : (
           <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
@@ -160,34 +153,32 @@ function PublicKOCard({
         </div>
       </div>
 
-      {isTeam && match.individual && (
+      {!isDoubles && (match as TeamKoResolved).individual.length > 0 && (
         <ul className="mt-2 space-y-1.5 border-t pt-2">
-          {match.individual.map((im, i) => {
-            const lineup = TEAM_MATCH_TEMPLATE[i];
-            const { a, b } = setsSummary(im.sets);
-            const hasResult = im.sets.length > 0;
+          {(match as TeamKoResolved).individual.map((sub) => {
+            let a = 0, b = 0;
+            for (const s of sub.sets) {
+              if (s.a > s.b) a += 1;
+              else if (s.b > s.a) b += 1;
+            }
+            const hasResult = sub.sets.length > 0;
             const aWonSub = hasResult && a > b;
             const bWonSub = hasResult && b > a;
-            const slotHint =
-              lineup.kind === "single"
-                ? `${lineup.slot} vs ${lineup.oppSlot}`
-                : `${lineup.slots.join("+")} vs ${lineup.oppSlots.join("+")}`;
+            const playersA = sub.playersA.map((p) => p.name).join(" / ") || "—";
+            const playersB = sub.playersB.map((p) => p.name).join(" / ") || "—";
             return (
-              <li key={im.id} className="rounded-md bg-muted/40 p-2">
+              <li key={sub.id} className="rounded-md bg-muted/40 p-2">
                 <div className="mb-1 flex items-center justify-between text-xs text-muted-foreground">
-                  <span className="flex items-center gap-1.5">
-                    <span className="font-medium text-foreground">{im.label}</span>
-                    <span className="rounded bg-muted px-1.5 py-0.5">{slotHint}</span>
-                  </span>
-                  <span>thắng {Math.ceil(im.bestOf / 2)}/{im.bestOf} ván</span>
+                  <span className="font-medium text-foreground">{sub.label}</span>
+                  <span>thắng {Math.ceil(sub.bestOf / 2)}/{sub.bestOf} ván</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <div className="min-w-0 flex-1 space-y-0.5">
                     <div className={`truncate ${aWonSub ? "font-semibold" : "text-muted-foreground"}`}>
-                      {im.playerA === "—" ? <span className="italic">Chưa gán</span> : im.playerA}
+                      {playersA}
                     </div>
                     <div className={`truncate ${bWonSub ? "font-semibold" : "text-muted-foreground"}`}>
-                      {im.playerB === "—" ? <span className="italic">Chưa gán</span> : im.playerB}
+                      {playersB}
                     </div>
                   </div>
                   <div className="flex shrink-0 flex-col items-end text-base font-semibold tabular-nums leading-tight">
