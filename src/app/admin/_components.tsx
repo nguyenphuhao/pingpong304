@@ -13,6 +13,7 @@ import {
   Radio,
   Search,
   Trash2,
+  Sparkles,
   Trophy,
   X,
 } from "lucide-react";
@@ -256,12 +257,92 @@ function RankBadge({ rank }: { rank: number; active: boolean }) {
   );
 }
 
+function ExplainStandingsButton({
+  rows,
+  kind,
+}: {
+  rows: StandingRow[];
+  kind: "doubles" | "team";
+}) {
+  const [open, setOpen] = useState(false);
+  const [explanation, setExplanation] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const explain = async () => {
+    if (explanation) return; // already fetched
+    setLoading(true);
+    try {
+      const res = await fetch("/api/ai/explain-standings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rows, kind }),
+      });
+      const json = await res.json();
+      if (json.data) {
+        setExplanation(json.data);
+      } else {
+        toast.error(json.error ?? "Không thể giải thích");
+      }
+    } catch {
+      toast.error("Lỗi kết nối AI");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(v) => {
+        setOpen(v);
+        if (v && !explanation) explain();
+      }}
+    >
+      <DialogTrigger
+        render={
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label="AI giải thích xếp hạng"
+          />
+        }
+      >
+        <Sparkles className="size-4" />
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Giải thích xếp hạng</DialogTitle>
+          <DialogDescription>
+            Phân tích bởi AI
+          </DialogDescription>
+        </DialogHeader>
+        <div className="max-h-[60dvh] overflow-y-auto px-1 py-2">
+          {loading && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="size-4 animate-spin" />
+              Đang phân tích...
+            </div>
+          )}
+          {explanation && (
+            <div className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap text-sm">
+              {explanation}
+            </div>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function StandingsCard({
   rows,
   diffLabel,
+  kind,
 }: {
   rows: StandingRow[];
   diffLabel: string;
+  kind?: "doubles" | "team";
 }) {
   const played = rows.some((r) => r.played > 0);
   return (
@@ -278,7 +359,10 @@ function StandingsCard({
             </p>
           </div>
         </div>
-        <div className="text-xs text-muted-foreground">Thắng: 1 điểm</div>
+        <div className="flex items-center gap-2">
+          {played && kind && <ExplainStandingsButton rows={rows} kind={kind} />}
+          <div className="text-xs text-muted-foreground">Thắng: 1 điểm</div>
+        </div>
       </div>
 
       <ol className="flex flex-col gap-2">
@@ -368,7 +452,7 @@ export function DoublesSchedule({
         </ol>
       </Card>
 
-      <StandingsCard rows={standings} diffLabel="Hiệu số ván" />
+      <StandingsCard rows={standings} diffLabel="Hiệu số ván" kind="doubles" />
 
       <MatchScheduleSection
         title="Lịch thi đấu vòng bảng"
@@ -617,7 +701,7 @@ export function TeamSchedule({
         </ol>
       </Card>
 
-      <StandingsCard rows={standings} diffLabel="Hiệu số trận cá nhân" />
+      <StandingsCard rows={standings} diffLabel="Hiệu số trận cá nhân" kind="team" />
 
       <MatchScheduleSection
         title="Lịch thi đấu vòng bảng"
