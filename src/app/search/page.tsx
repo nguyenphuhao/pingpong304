@@ -3,8 +3,9 @@ import { Search, User } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { PublicHeader } from "../_public";
 import { SearchInput } from "../_searchInput";
-import { CompactMatchRow } from "../_feedCards";
-import { searchPlayersAndMatches } from "../_home";
+import { searchPlayers } from "@/lib/db/search";
+
+export const dynamic = "force-dynamic";
 
 export default async function SearchPage({
   searchParams,
@@ -12,7 +13,7 @@ export default async function SearchPage({
   searchParams: Promise<{ q?: string }>;
 }) {
   const { q = "" } = await searchParams;
-  const { players, matches } = searchPlayersAndMatches(q);
+  const players = q ? await searchPlayers(q) : [];
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col gap-5 p-4">
@@ -27,7 +28,7 @@ export default async function SearchPage({
         />
       )}
 
-      {q && players.length === 0 && matches.length === 0 && (
+      {q && players.length === 0 && (
         <Empty
           icon={<Search className="size-6 text-muted-foreground" />}
           title={`Không tìm thấy "${q}"`}
@@ -54,19 +55,6 @@ export default async function SearchPage({
                 </div>
                 <span className="shrink-0 text-sm text-muted-foreground">{p.phone}</span>
               </Card>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {matches.length > 0 && (
-        <section>
-          <h2 className="mb-2 text-sm font-medium uppercase tracking-wide text-muted-foreground">
-            Trận đấu ({matches.length})
-          </h2>
-          <div className="flex flex-col gap-1.5">
-            {matches.map((m) => (
-              <CompactMatchRow key={`${m.kind}-${m.id}`} item={m} />
             ))}
           </div>
         </section>
