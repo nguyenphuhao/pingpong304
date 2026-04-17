@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Be_Vietnam_Pro } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { BottomNav } from "./_BottomNav";
+import { OnboardingDialog } from "./_OnboardingDialog";
 import { Providers } from "./_Providers";
 import { PreferencesScript } from "./_preferences-script";
 import "./globals.css";
@@ -60,6 +61,7 @@ export default function RootLayout({
           {children}
           <BottomNav />
           <Toaster position="top-center" richColors />
+          <OnboardingDialog />
         </Providers>
       </body>
     </html>
