@@ -86,8 +86,8 @@ export default function Home() {
         <div className="flex flex-col gap-2">
           <ScheduleRow time="07:00" label="Tập trung · Điểm danh" icon={<Clock className="size-4 text-muted-foreground" />} />
           <ScheduleRow time="07:35" label="Khai mạc & Thi đấu" icon={<Flag className="size-4 text-red-600 dark:text-red-400" />} />
-          <ScheduleRow time="Sáng" label="Nội dung Đồng đội" icon={<Shield className="size-4 text-violet-600 dark:text-violet-400" />} />
-          <ScheduleRow time="Chiều" label="Nội dung Đôi" icon={<Users className="size-4 text-blue-600 dark:text-blue-400" />} />
+          <ScheduleRow time="08:00" label="Nội dung Đồng đội" icon={<Shield className="size-4 text-violet-600 dark:text-violet-400" />} />
+          <ScheduleRow time="13:30" label="Nội dung Đôi" icon={<Users className="size-4 text-blue-600 dark:text-blue-400" />} />
         </div>
       </Section>
 
