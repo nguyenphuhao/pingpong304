@@ -155,6 +155,11 @@ function ExplainButton({
   const [open, setOpen] = useState(false);
 
   const explain = async () => {
+    if (disabled) {
+      setExplanation("Chưa có kết quả thi đấu nào. Khi các trận đấu được cập nhật, AI sẽ phân tích bảng xếp hạng cho bạn.");
+      setOpen(true);
+      return;
+    }
     if (explanation) { setOpen(true); return; }
     setLoading(true);
     setOpen(true);
@@ -191,8 +196,7 @@ function ExplainButton({
       <button
         type="button"
         onClick={explain}
-        disabled={disabled}
-        className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed py-1.5 text-xs text-muted-foreground transition-colors hover:bg-background/80 disabled:opacity-50"
+        className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed py-1.5 text-xs text-muted-foreground transition-colors hover:bg-background/80"
       >
         <Sparkles className="size-3.5" />
         AI phân tích xếp hạng
