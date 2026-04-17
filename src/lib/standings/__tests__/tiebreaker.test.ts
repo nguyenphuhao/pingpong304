@@ -1,7 +1,7 @@
 // src/lib/standings/__tests__/tiebreaker.test.ts
 import { describe, expect, test } from "vitest";
-import { applyDoublesRanking } from "../tiebreaker";
-import type { StandingRow, DoublesMatchForTiebreak } from "../types";
+import { applyDoublesRanking, applyTeamRanking } from "../tiebreaker";
+import type { StandingRow, DoublesMatchForTiebreak, TeamMatchForTiebreak } from "../types";
 
 function mkRow(
   id: string,
@@ -140,5 +140,68 @@ describe("applyDoublesRanking", () => {
     expect(ranked[0].rank).toBe(1);
     expect(ranked[1].rank).toBe(2);
     expect(ranked[2].rank).toBe(2);
+  });
+});
+
+function mkTeamMatch(
+  teamAId: string,
+  teamBId: string,
+  scoreA: number,
+  scoreB: number,
+  winnerId: string | null = scoreA > scoreB ? teamAId : scoreB > scoreA ? teamBId : null,
+): TeamMatchForTiebreak {
+  return {
+    teamA: { id: teamAId },
+    teamB: { id: teamBId },
+    scoreA,
+    scoreB,
+    status: "done",
+    winner: winnerId ? { id: winnerId } : null,
+  };
+}
+
+describe("applyTeamRanking", () => {
+  test("uses sub-match diff, not sets", () => {
+    const rows = [
+      mkRow("A", 2, 1, 8, 4),
+      mkRow("B", 2, 1, 6, 6),
+    ];
+    const matches: TeamMatchForTiebreak[] = [];
+    const ranked = applyTeamRanking(rows, matches);
+    expect(ranked[0].entryId).toBe("A");
+    expect(ranked[0].rank).toBe(1);
+  });
+
+  test("H2H resolves 2-way tie", () => {
+    const rows = [mkRow("tA", 1, 1, 5, 5), mkRow("tB", 1, 1, 5, 5)];
+    const matches = [mkTeamMatch("tA", "tB", 3, 2, "tA")];
+    const ranked = applyTeamRanking(rows, matches);
+    expect(ranked[0].entryId).toBe("tA");
+    expect(ranked[0].rank).toBe(1);
+    expect(ranked[1].entryId).toBe("tB");
+    expect(ranked[1].rank).toBe(2);
+  });
+
+  test("3-way mini-league with team metrics", () => {
+    const rows = [mkRow("tA", 2, 1, 7, 5), mkRow("tB", 2, 1, 7, 5), mkRow("tC", 2, 1, 7, 5)];
+    const matches = [
+      mkTeamMatch("tA", "tB", 3, 2),
+      mkTeamMatch("tB", "tC", 4, 1),
+      mkTeamMatch("tC", "tA", 3, 2),
+    ];
+    const ranked = applyTeamRanking(rows, matches);
+    expect(ranked.map((r) => [r.entryId, r.rank])).toEqual([
+      ["tB", 1], ["tA", 2], ["tC", 3],
+    ]);
+  });
+
+  test("excludes non-done matches", () => {
+    const rows = [mkRow("tA", 1, 0, 3, 2), mkRow("tB", 1, 0, 3, 2)];
+    const matches: TeamMatchForTiebreak[] = [
+      { teamA: { id: "tA" }, teamB: { id: "tB" }, scoreA: 0, scoreB: 0, status: "scheduled", winner: null },
+    ];
+    const ranked = applyTeamRanking(rows, matches);
+    expect(ranked[0].rank).toBe(1);
+    expect(ranked[1].rank).toBe(1);
   });
 });
