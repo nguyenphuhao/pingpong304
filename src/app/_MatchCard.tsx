@@ -33,7 +33,7 @@ export function MatchCard({
     <div
       className={`rounded-xl border p-3 ${
         isLive
-          ? "border-green-500/25 bg-green-950"
+          ? "border-green-500/40 bg-green-900 text-white"
           : "border-border bg-card"
       }`}
     >
@@ -49,14 +49,14 @@ export function MatchCard({
           {groupName.replace(/^Bảng\s*/i, "")}
         </span>
         {isLive ? (
-          <span className="text-xs font-medium text-green-400">LIVE</span>
+          <span className="text-xs font-semibold text-green-300">LIVE</span>
         ) : (
           <span className="rounded-full bg-green-500/15 px-1.5 py-0.5 text-[10px] font-medium text-green-400">
             Đã xong
           </span>
         )}
         {table != null && (
-          <span className="ml-auto text-xs text-muted-foreground">
+          <span className={`ml-auto text-xs ${isLive ? "text-green-200" : "text-muted-foreground"}`}>
             Bàn {table}
           </span>
         )}
@@ -66,15 +66,15 @@ export function MatchCard({
       <div className="flex items-center gap-3">
         <div className="min-w-0 flex-1 space-y-0.5 text-base">
           <div className={`truncate ${aWon ? "font-semibold" : ""}`}>{sideA}</div>
-          <div className={`truncate ${bWon ? "font-semibold" : isLive ? "text-green-200/60" : "text-muted-foreground"}`}>
+          <div className={`truncate ${bWon ? "font-semibold" : isLive ? "text-white/70" : "text-muted-foreground"}`}>
             {sideB}
           </div>
         </div>
         <div className="flex shrink-0 flex-col items-end text-xl font-bold tabular-nums leading-tight">
-          <span className={aWon ? (isLive ? "text-green-400" : "") : isLive ? "text-green-200/60" : "text-muted-foreground"}>
+          <span className={aWon ? (isLive ? "text-green-300" : "") : isLive ? "text-white/70" : "text-muted-foreground"}>
             {scoreA}
           </span>
-          <span className={bWon ? (isLive ? "text-green-400" : "") : isLive ? "text-green-200/60" : "text-muted-foreground"}>
+          <span className={bWon ? (isLive ? "text-green-300" : "") : isLive ? "text-white/70" : "text-muted-foreground"}>
             {scoreB}
           </span>
         </div>
@@ -87,7 +87,7 @@ export function MatchCard({
             <span
               key={i}
               className={`inline-flex min-w-[36px] items-center justify-center rounded px-1.5 py-0.5 text-xs tabular-nums ${
-                isLive ? "bg-green-900/50" : "bg-muted"
+                isLive ? "bg-green-800 text-green-100" : "bg-muted"
               }`}
             >
               {s.a}-{s.b}
