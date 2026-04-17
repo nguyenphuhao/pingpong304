@@ -5,8 +5,8 @@ export const FONT_SIZE_STORAGE_KEY = "pingpong:font-size";
 export const ONBOARDED_STORAGE_KEY = "pingpong:onboarded";
 export const FONT_SIZE_ATTR = "data-font-size";
 
-type StorageLike = Pick<Storage, "getItem" | "setItem" | "removeItem">;
-type DocLike = {
+export type StorageLike = Pick<Storage, "getItem" | "setItem" | "removeItem">;
+export type DocLike = {
   documentElement: {
     getAttribute: (k: string) => string | null;
     setAttribute: (k: string, v: string) => void;
@@ -53,6 +53,6 @@ export function markOnboarded(storage: StorageLike): void {
   try {
     storage.setItem(ONBOARDED_STORAGE_KEY, "1");
   } catch {
-    // ignore
+    // Safari Private Mode / quota — flag simply won't persist this session.
   }
 }
