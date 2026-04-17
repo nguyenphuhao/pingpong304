@@ -1,15 +1,12 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { generateObject, gateway } from "ai";
+import { generateText, gateway } from "ai";
 import { requireAdmin, UnauthorizedError } from "@/lib/auth";
 import { buildSinglePrompt, buildBatchPrompt } from "@/lib/ai/prompts";
 import {
   SingleResultSchema,
   BatchResultSchema,
   RejectionSchema,
-  AiSingleResultSchema,
-  AiBatchResultSchema,
-  AiRejectionSchema,
 } from "@/lib/ai/schemas";
 import type { UserContent } from "ai";
 
@@ -68,12 +65,6 @@ export async function POST(req: Request) {
       ? buildBatchPrompt(data.group!)
       : buildSinglePrompt(data.match!);
 
-    // AI-friendly schemas (no maxItems/minItems/refine — Anthropic rejects those)
-    const aiSchema = isBatch
-      ? z.union([AiBatchResultSchema, AiRejectionSchema])
-      : z.union([AiSingleResultSchema, AiRejectionSchema]);
-
-    // Full schemas for post-validation
     const validationSchema = isBatch
       ? z.union([BatchResultSchema, RejectionSchema])
       : z.union([SingleResultSchema, RejectionSchema]);
@@ -87,9 +78,8 @@ export async function POST(req: Request) {
       text: data.text ?? "Parse kết quả từ ảnh này",
     });
 
-    const result = await generateObject({
+    const result = await generateText({
       model: gateway("anthropic/claude-haiku-4.5"),
-      schema: aiSchema,
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userContent },
@@ -100,8 +90,14 @@ export async function POST(req: Request) {
       },
     });
 
-    // Post-validate with full schema (maxItems, refine, etc.)
-    const validated = validationSchema.parse(result.object);
+    // Extract JSON from response text (may be wrapped in markdown code block)
+    const jsonStr = result.text
+      .replace(/^```(?:json)?\s*/m, "")
+      .replace(/\s*```$/m, "")
+      .trim();
+
+    const parsed = JSON.parse(jsonStr);
+    const validated = validationSchema.parse(parsed);
 
     return NextResponse.json({ data: validated, error: null });
   } catch (err) {
