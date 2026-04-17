@@ -33,7 +33,7 @@ export function FloatingChatBubble() {
 
   return (
     <>
-      <ChatLauncher onClick={() => setOpen(true)} />
+      {!open ? <ChatLauncher onClick={() => setOpen(true)} /> : null}
       <ChatWindow open={open} onClose={() => setOpen(false)}>
         <MessageList messages={messages} isStreaming={isStreaming} />
         {messages.length === 0 ? (
