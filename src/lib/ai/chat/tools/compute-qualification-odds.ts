@@ -6,10 +6,11 @@ import {
   fetchTeamMatchesByGroup,
 } from "@/lib/db/matches";
 import { computeDoublesOdds, computeTeamsOdds } from "../qualification";
+import { resolveGroup } from "./resolve-group";
 
 export const computeQualificationOddsTool = tool({
   description:
-    "Tính xác suất 1 cặp/đội vào vòng trong. Enumerate hết kịch bản còn lại, trả về % + trận quyết định + kịch bản cần thắng.",
+    "Tính xác suất 1 cặp/đội vào vòng trong. Enumerate hết kịch bản còn lại, trả về % + trận quyết định + kịch bản cần thắng. groupId chấp nhận id chính xác hoặc tên bảng ('A'/'Bảng A').",
   inputSchema: z.object({
     groupId: z.string().min(1),
     entityId: z.string().min(1),
@@ -19,12 +20,13 @@ export const computeQualificationOddsTool = tool({
   execute: async ({ groupId, entityId, type, advanceCount }) => {
     if (type === "doubles") {
       const groups = await fetchDoublesGroups();
-      const group = groups.find((g) => g.id === groupId);
-      if (!group) throw new Error("NOT_FOUND: bảng không tồn tại");
+      const group = resolveGroup(groupId, groups);
       if (!group.entries.some((e) => e.id === entityId)) {
-        throw new Error(`NOT_FOUND: ${entityId} không có trong bảng ${groupId}`);
+        throw new Error(
+          `NOT_FOUND: ${entityId} không có trong bảng ${group.id}`,
+        );
       }
-      const matches = await fetchDoublesMatchesByGroup(groupId);
+      const matches = await fetchDoublesMatchesByGroup(group.id);
       return computeDoublesOdds({
         entries: group.entries,
         matches,
@@ -33,12 +35,13 @@ export const computeQualificationOddsTool = tool({
       });
     }
     const groups = await fetchTeamGroups();
-    const group = groups.find((g) => g.id === groupId);
-    if (!group) throw new Error("NOT_FOUND: bảng không tồn tại");
+    const group = resolveGroup(groupId, groups);
     if (!group.entries.some((e) => e.id === entityId)) {
-      throw new Error(`NOT_FOUND: ${entityId} không có trong bảng ${groupId}`);
+      throw new Error(
+        `NOT_FOUND: ${entityId} không có trong bảng ${group.id}`,
+      );
     }
-    const matches = await fetchTeamMatchesByGroup(groupId);
+    const matches = await fetchTeamMatchesByGroup(group.id);
     return computeTeamsOdds({
       entries: group.entries,
       matches,

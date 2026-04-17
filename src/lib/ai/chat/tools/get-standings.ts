@@ -9,9 +9,11 @@ import {
   computeDoublesStandings,
   computeTeamStandings,
 } from "@/lib/standings/compute";
+import { resolveGroup } from "./resolve-group";
 
 export const getStandingsTool = tool({
-  description: "Lấy bảng xếp hạng của 1 bảng đấu (đã áp dụng luật tiebreaker).",
+  description:
+    "Lấy bảng xếp hạng của 1 bảng đấu (đã áp dụng luật tiebreaker). groupId chấp nhận id chính xác (vd 'gA') HOẶC tên bảng (vd 'Bảng A' hoặc chỉ 'A').",
   inputSchema: z.object({
     groupId: z.string().min(1),
     type: z.enum(["doubles", "teams"]),
@@ -19,17 +21,15 @@ export const getStandingsTool = tool({
   execute: async ({ groupId, type }) => {
     if (type === "doubles") {
       const groups = await fetchDoublesGroups();
-      const group = groups.find((g) => g.id === groupId);
-      if (!group) throw new Error("NOT_FOUND: bảng không tồn tại");
-      const matches = await fetchDoublesMatchesByGroup(groupId);
+      const group = resolveGroup(groupId, groups);
+      const matches = await fetchDoublesMatchesByGroup(group.id);
       const rows = computeDoublesStandings(group.entries, matches);
-      return { groupName: group.name, rows };
+      return { groupId: group.id, groupName: group.name, rows };
     }
     const groups = await fetchTeamGroups();
-    const group = groups.find((g) => g.id === groupId);
-    if (!group) throw new Error("NOT_FOUND: bảng không tồn tại");
-    const matches = await fetchTeamMatchesByGroup(groupId);
+    const group = resolveGroup(groupId, groups);
+    const matches = await fetchTeamMatchesByGroup(group.id);
     const rows = computeTeamStandings(group.entries, matches);
-    return { groupName: group.name, rows };
+    return { groupId: group.id, groupName: group.name, rows };
   },
 });
