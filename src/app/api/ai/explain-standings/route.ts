@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { generateText, gateway } from "ai";
-import { requireAdmin, UnauthorizedError } from "@/lib/auth";
+// Auth removed — this endpoint is safe for public use (read-only AI analysis)
 
 const StandingRowSchema = z.object({
   entry: z.string(),
@@ -22,7 +22,6 @@ const RequestSchema = z.object({
 
 export async function POST(req: Request) {
   try {
-    await requireAdmin();
     const body = await req.json();
     const { rows, kind } = RequestSchema.parse(body);
 
@@ -66,9 +65,6 @@ Nhiệm vụ:
 
     return NextResponse.json({ data: result.text, error: null });
   } catch (err) {
-    if (err instanceof UnauthorizedError) {
-      return NextResponse.json({ data: null, error: "Unauthorized" }, { status: 401 });
-    }
     if (err instanceof z.ZodError) {
       return NextResponse.json(
         { data: null, error: err.issues.map((i) => i.message).join("; ") },
