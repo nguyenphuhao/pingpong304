@@ -11,7 +11,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { VoiceInputButton } from "./_voice-input-button";
 import {
@@ -223,7 +222,7 @@ export function AiSingleMatchButton({
             onResult={(t) => setText((prev) => prev + t)}
             disabled={loading}
           />
-          <Input
+          <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => {
@@ -233,7 +232,8 @@ export function AiSingleMatchButton({
               }
             }}
             placeholder="Nhập kết quả hoặc gửi ảnh..."
-            className="h-8 flex-1 text-sm"
+            className="min-h-8 max-h-24 flex-1 resize-none rounded-md border border-input bg-background px-3 py-1.5 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            rows={1}
             disabled={loading}
           />
           <Button
@@ -585,12 +585,13 @@ export function AiBatchGroupButton({
             onResult={(t) => setText((prev) => prev + t)}
             disabled={loading}
           />
-          <Input
+          <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
             placeholder="Nhập kết quả hoặc gửi ảnh..."
-            className="h-8 flex-1 text-sm"
+            className="min-h-8 max-h-24 flex-1 resize-none rounded-md border border-input bg-background px-3 py-1.5 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            rows={1}
             disabled={loading}
           />
           <Button type="button" variant="ghost" size="icon-sm" onClick={send} disabled={loading || (!text.trim() && !imageBase64)}>
