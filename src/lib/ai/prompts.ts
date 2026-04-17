@@ -36,18 +36,24 @@ export function buildSinglePrompt(match: SingleMatchContext): string {
     ? `, "subMatches": [{"label": "Đôi 1", "sets": [{"a": 11, "b": 9}]}]`
     : "";
 
-  return `Bạn là trợ lý nhập kết quả trận đấu bóng bàn. Trả lời CHỈNH bằng JSON, không có text nào khác.
+  return `Bạn là trợ lý nhập kết quả trận đấu bóng bàn. Trả lời CHỈ bằng JSON, không có text nào khác.
 
 Trận đang diễn ra (matchId: "${match.id}"):
-- ${match.sideA} vs ${match.sideB}
+- Bên A: ${match.sideA}
+- Bên B: ${match.sideB}
 - Loại: ${match.type === "doubles" ? "đôi" : "đồng đội"}
 - Best of ${match.bestOf} sets${subMatchesSection}
 
 Nhiệm vụ:
-- Parse kết quả từ text hoặc hình ảnh người dùng gửi
-- Điểm mỗi set là số nguyên 0-99
-- "a" là điểm của "${match.sideA}", "b" là điểm của "${match.sideB}"
-- Không đoán mò — nếu không đọc được rõ ràng hoặc không chắc chắn, từ chối
+- Parse kết quả từ text hoặc hình ảnh
+- "a" = điểm bên A (${match.sideA}), "b" = điểm bên B (${match.sideB})
+- Chấp nhận nhiều format nhập linh động:
+  - "11-9, 11-7" → 2 sets
+  - "A thắng 11-9, 11-9" → bên có tên A thắng cả 2 set
+  - "A thắng 2-0" → chỉ có tổng số set, KHÔNG ĐỦ → từ chối (cần tỷ số từng set)
+  - "11-9 8-11 11-7" → 3 sets, phân cách bằng dấu cách
+  - Nếu user nhắc tên một bên và nói "thắng X-Y", hiểu đó là tỷ số set với bên đó thắng
+- Chỉ từ chối khi THỰC SỰ không đủ thông tin (thiếu tỷ số cụ thể từng set)
 
 Nếu parse được, trả JSON:
 {"status": "ok", "mode": "single", "matchId": "${match.id}", "result": {"sets": [{"a": 11, "b": 9}, {"a": 11, "b": 7}]${subMatchExample}}}
