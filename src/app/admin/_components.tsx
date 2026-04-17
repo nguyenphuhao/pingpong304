@@ -138,7 +138,7 @@ export function ContentWorkspace({
         <GroupsSection kind={kind} groups={groups} pairs={pairs} teams={teams} />
       </TabsContent>
       <TabsContent value="ko" className="mt-4">
-        <KnockoutSection kind={kind} matches={knockout} />
+        <KnockoutSection kind={kind} matches={knockout} teams={teams} />
       </TabsContent>
     </Tabs>
   );
@@ -2002,9 +2002,11 @@ async function patchKoMatch(kind: Content, id: string, body: Record<string, unkn
 function KnockoutSection({
   kind,
   matches,
+  teams,
 }: {
   kind: Content;
   matches: KoMatch[];
+  teams?: TeamWithNames[];
 }) {
   const router = useRouter();
   const [seeding, setSeeding] = useState(false);
@@ -2091,7 +2093,7 @@ function KnockoutSection({
                 </div>
                 <div className="flex flex-col gap-2">
                   {list.map((m, i) => (
-                    <KoMatchCard key={m.id} match={m} index={i + 1} kind={kind} />
+                    <KoMatchCard key={m.id} match={m} index={i + 1} kind={kind} teams={teams} />
                   ))}
                 </div>
               </div>
@@ -2111,10 +2113,12 @@ function KoMatchCard({
   match,
   index,
   kind,
+  teams,
 }: {
   match: KoMatch;
   index: number;
   kind: Content;
+  teams?: TeamWithNames[];
 }) {
   const router = useRouter();
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
@@ -2209,17 +2213,100 @@ function KoMatchCard({
       )}
 
       {!isDoubles && (match as TeamKoResolved).entryA && (match as TeamKoResolved).entryB && (
-        <details className="group mt-2">
-          <summary className="flex cursor-pointer list-none items-center justify-between rounded-md bg-muted/50 px-2 py-1.5 text-sm text-muted-foreground">
-            <span>Chi tiết {(match as TeamKoResolved).individual.length} lượt</span>
-            <ChevronRight className="size-3.5 transition-transform group-open:rotate-90" />
-          </summary>
-          <p className="mt-2 text-xs text-muted-foreground">
-            Quản lý trận thành phần tại trang chi tiết (coming soon).
-          </p>
-        </details>
+        <TeamKoSubMatches
+          match={match as TeamKoResolved}
+          teams={teams}
+          onSaved={() => router.refresh()}
+        />
       )}
     </Card>
+  );
+}
+
+function TeamKoSubMatches({
+  match,
+  teams,
+  onSaved,
+}: {
+  match: TeamKoResolved;
+  teams?: TeamWithNames[];
+  onSaved: () => void;
+}) {
+  const [subs, setSubs] = useState<SubMatchResolved[]>(match.individual);
+  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const inFlight = useRef(false);
+  const subsRef = useRef(subs);
+  useEffect(() => { subsRef.current = subs; }, [subs]);
+
+  const teamA = teams?.find((t) => t.id === match.entryA?.id);
+  const teamB = teams?.find((t) => t.id === match.entryB?.id);
+  const teamAPlayers = teamA?.members ?? [];
+  const teamBPlayers = teamB?.members ?? [];
+
+  const doSave = async (nextSubs: SubMatchResolved[]) => {
+    inFlight.current = true;
+    setSaveState("saving");
+    try {
+      await patchKoMatch("teams", match.id, {
+        individual: nextSubs.map(subMatchToPatch),
+      });
+      setSaveState("saved");
+      onSaved();
+    } catch (e) {
+      setSaveState("error");
+      toast.error(e instanceof Error ? e.message : "Lỗi");
+    } finally {
+      inFlight.current = false;
+    }
+  };
+
+  const scheduleSave = () => {
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    setSaveState("saving");
+    saveTimer.current = setTimeout(() => {
+      if (inFlight.current) return;
+      void doSave(subsRef.current);
+    }, 400);
+  };
+
+  useEffect(() => {
+    return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
+  }, []);
+
+  const updateSub = (subId: string, patch: Partial<SubMatchResolved>) => {
+    setSubs((prev) => {
+      const next = prev.map((s) => (s.id === subId ? { ...s, ...patch } : s));
+      subsRef.current = next;
+      return next;
+    });
+    scheduleSave();
+  };
+
+  return (
+    <details className="group mt-2" open>
+      <summary className="flex cursor-pointer list-none items-center justify-between rounded-md bg-muted/50 px-2 py-1.5 text-sm text-muted-foreground">
+        <span className="flex items-center gap-2">
+          Chi tiết {subs.length} lượt
+          {saveState === "saving" && <Loader2 className="size-3 animate-spin" />}
+          {saveState === "saved" && <CheckCircle2 className="size-3 text-green-600" />}
+        </span>
+        <ChevronRight className="size-3.5 transition-transform group-open:rotate-90" />
+      </summary>
+      <ul className="mt-2 flex flex-col gap-1.5">
+        {subs.map((sub) => (
+          <TeamSubMatchRow
+            key={sub.id}
+            sub={sub}
+            teamAPlayers={teamAPlayers}
+            teamBPlayers={teamBPlayers}
+            canDelete={false}
+            onChange={(patch: Partial<SubMatchResolved>) => updateSub(sub.id, patch)}
+            onDelete={() => {}}
+          />
+        ))}
+      </ul>
+    </details>
   );
 }
 
