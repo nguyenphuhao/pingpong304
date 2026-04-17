@@ -226,8 +226,8 @@ export function AiSingleMatchButton({
             value={text}
             onChange={(e) => setText(e.target.value)}
             placeholder="Nhập kết quả hoặc gửi ảnh..."
-            className="min-h-8 max-h-24 flex-1 resize-none rounded-md border border-input bg-background px-3 py-1.5 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            rows={1}
+            className="min-h-20 max-h-32 flex-1 resize-none rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            rows={3}
             disabled={loading}
           />
           <Button
@@ -584,8 +584,8 @@ export function AiBatchGroupButton({
             onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
             placeholder="Nhập kết quả hoặc gửi ảnh..."
-            className="min-h-8 max-h-24 flex-1 resize-none rounded-md border border-input bg-background px-3 py-1.5 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            rows={1}
+            className="min-h-20 max-h-32 flex-1 resize-none rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            rows={3}
             disabled={loading}
           />
           <Button type="button" variant="ghost" size="icon-sm" onClick={send} disabled={loading || (!text.trim() && !imageBase64)}>
