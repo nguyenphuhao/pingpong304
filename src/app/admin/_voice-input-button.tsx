@@ -1,37 +1,30 @@
 "use client";
 
-// Web Speech API types (not in all TS lib configs)
-declare global {
-  interface Window {
-    webkitSpeechRecognition: typeof SpeechRecognition;
-  }
-}
-
 import { useState, useRef, useCallback, useEffect } from "react";
 import { Mic, MicOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-function getSpeechRecognition(): (new () => SpeechRecognition) | null {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type SpeechRecognitionInstance = any;
+
+function getSpeechRecognition(): (new () => SpeechRecognitionInstance) | null {
   if (typeof window === "undefined") return null;
-  return (
-    (window as unknown as Record<string, unknown>).webkitSpeechRecognition ??
-    (window as unknown as Record<string, unknown>).SpeechRecognition ??
-    null
-  ) as (new () => SpeechRecognition) | null;
+  const w = window as unknown as Record<string, unknown>;
+  return (w.webkitSpeechRecognition ?? w.SpeechRecognition ?? null) as
+    | (new () => SpeechRecognitionInstance)
+    | null;
 }
 
 export function VoiceInputButton({
   onResult,
-  onInterim,
   disabled,
 }: {
   onResult: (text: string) => void;
-  onInterim?: (text: string) => void;
   disabled?: boolean;
 }) {
   const [listening, setListening] = useState(false);
   const [supported, setSupported] = useState(false);
-  const recogRef = useRef<SpeechRecognition | null>(null);
+  const recogRef = useRef<SpeechRecognitionInstance | null>(null);
 
   useEffect(() => {
     setSupported(getSpeechRecognition() != null);
@@ -43,28 +36,24 @@ export function VoiceInputButton({
       return;
     }
 
-    const SpeechRecognitionClass = getSpeechRecognition();
-    if (!SpeechRecognitionClass) return;
+    const Ctor = getSpeechRecognition();
+    if (!Ctor) return;
 
-    const recognition = new SpeechRecognitionClass();
+    const recognition = new Ctor();
     recognition.lang = "vi-VN";
-    recognition.interimResults = true;
+    recognition.interimResults = false;
     recognition.continuous = false;
     recogRef.current = recognition;
 
-    recognition.onresult = (event: SpeechRecognitionEvent) => {
-      let final = "";
-      let interim = "";
+    recognition.onresult = (event: { results: ArrayLike<{ isFinal: boolean; 0: { transcript: string } }> }) => {
+      let text = "";
       for (let i = 0; i < event.results.length; i++) {
         const result = event.results[i];
         if (result.isFinal) {
-          final += result[0].transcript;
-        } else {
-          interim += result[0].transcript;
+          text += result[0].transcript;
         }
       }
-      if (interim && onInterim) onInterim(interim);
-      if (final) onResult(final);
+      if (text) onResult(text);
     };
 
     recognition.onerror = () => {
@@ -77,7 +66,7 @@ export function VoiceInputButton({
 
     recognition.start();
     setListening(true);
-  }, [listening, onResult, onInterim]);
+  }, [listening, onResult]);
 
   if (!supported) return null;
 

@@ -4,7 +4,7 @@ import { generateObject, gateway } from "ai";
 import { requireAdmin, UnauthorizedError } from "@/lib/auth";
 import { buildSinglePrompt, buildBatchPrompt } from "@/lib/ai/prompts";
 import { SingleResultSchema, BatchResultSchema, RejectionSchema } from "@/lib/ai/schemas";
-import type { CoreMessage } from "ai";
+import type { UserContent } from "ai";
 
 const BestOfVal = z.union([z.literal(3), z.literal(5)]);
 
@@ -65,7 +65,7 @@ export async function POST(req: Request) {
       ? z.union([BatchResultSchema, RejectionSchema])
       : z.union([SingleResultSchema, RejectionSchema]);
 
-    const userContent: CoreMessage["content"] = [];
+    const userContent: UserContent = [];
     if (data.imageBase64 != null) {
       userContent.push({ type: "image", image: data.imageBase64 });
     }
