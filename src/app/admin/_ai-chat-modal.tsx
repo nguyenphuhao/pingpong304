@@ -17,6 +17,7 @@ import { VoiceInputButton } from "./_voice-input-button";
 import {
   parseMatchWithAI,
   type AiSingleMatchContext,
+  type AiBatchGroupContext,
   type AiParseResponse,
 } from "./_match-actions";
 import type { SetScore } from "@/lib/schemas/match";
@@ -375,4 +376,242 @@ export function AiResponseDisplay({
   }
 
   return null;
+}
+
+export function AiBatchGroupButton({
+  groupContext,
+  onApply,
+}: {
+  groupContext: AiBatchGroupContext;
+  onApply: (results: Array<{ matchId: string; sets: SetScore[]; subMatches?: Array<{ label: string; sets: SetScore[] }> }>) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [text, setText] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [imageBase64, setImageBase64] = useState<string | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const reset = () => {
+    setMessages([]);
+    setText("");
+    setLoading(false);
+    setImageBase64(null);
+    setImagePreview(null);
+    setSelected(new Set());
+  };
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 4 * 1024 * 1024) {
+      toast.error("Ảnh quá lớn (tối đa 4MB)");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      setImagePreview(dataUrl);
+      setImageBase64(dataUrl.replace(/^data:image\/\w+;base64,/, ""));
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
+
+  const send = async () => {
+    const inputText = text.trim() || undefined;
+    const inputImage = imageBase64 ?? undefined;
+    if (!inputText && !inputImage) return;
+
+    setMessages((prev) => [
+      ...prev,
+      { role: "user" as const, text: inputText, imageUrl: imagePreview ?? undefined },
+    ]);
+    setText("");
+    setImageBase64(null);
+    setImagePreview(null);
+    setLoading(true);
+
+    try {
+      const response = await parseMatchWithAI({
+        text: inputText,
+        imageBase64: inputImage,
+        group: groupContext,
+      });
+      setMessages((prev) => [...prev, { role: "ai" as const, response }]);
+
+      // Auto-select matches that don't already have results
+      if (response.status === "ok" && response.mode === "batch") {
+        const newIds = new Set(
+          response.parsed
+            .filter((p) => !p.alreadyHasResult)
+            .map((p) => p.matchId),
+        );
+        setSelected(newIds);
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Lỗi kết nối AI");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const lastAiResponse = [...messages]
+    .reverse()
+    .find((m): m is Extract<Message, { role: "ai" }> => m.role === "ai");
+
+  const canApply =
+    lastAiResponse?.response.status === "ok" &&
+    lastAiResponse.response.mode === "batch" &&
+    selected.size > 0;
+
+  const handleApply = () => {
+    if (
+      !lastAiResponse ||
+      lastAiResponse.response.status !== "ok" ||
+      lastAiResponse.response.mode !== "batch"
+    )
+      return;
+    const results = lastAiResponse.response.parsed
+      .filter((p) => selected.has(p.matchId))
+      .map((p) => ({
+        matchId: p.matchId,
+        sets: p.result.sets,
+        subMatches: p.result.subMatches,
+      }));
+    onApply(results);
+    setOpen(false);
+    reset();
+  };
+
+  const toggleSelected = (matchId: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(matchId)) next.delete(matchId);
+      else next.add(matchId);
+      return next;
+    });
+  };
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(v) => {
+        setOpen(v);
+        if (!v) reset();
+      }}
+    >
+      <DialogTrigger
+        render={
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            aria-label="AI nhập kết quả hàng loạt"
+          />
+        }
+      >
+        <Sparkles className="mr-1 size-4" />
+        AI
+      </DialogTrigger>
+      <DialogContent className="flex max-h-[80dvh] flex-col">
+        <DialogHeader>
+          <DialogTitle>AI nhập kết quả hàng loạt</DialogTitle>
+          <DialogDescription>
+            {groupContext.matches.length} trận trong bảng
+          </DialogDescription>
+        </DialogHeader>
+
+        {/* Messages */}
+        <div className="flex-1 space-y-3 overflow-y-auto px-1 py-2">
+          {messages.map((msg, i) => (
+            <div key={i}>
+              {msg.role === "user" ? (
+                <div className="flex flex-col items-end gap-1">
+                  {msg.imageUrl && (
+                    <img src={msg.imageUrl} alt="Input" className="max-h-40 rounded-lg border" />
+                  )}
+                  {msg.text && (
+                    <div className="rounded-lg bg-primary px-3 py-1.5 text-sm text-primary-foreground">
+                      {msg.text}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <AiResponseDisplay
+                  response={msg.response}
+                  selected={selected}
+                  onToggle={toggleSelected}
+                />
+              )}
+            </div>
+          ))}
+          {loading && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="size-4 animate-spin" />
+              Đang xử lý...
+            </div>
+          )}
+        </div>
+
+        {/* Image preview */}
+        {imagePreview && (
+          <div className="relative mx-1 mb-1">
+            <img src={imagePreview} alt="Preview" className="max-h-20 rounded border" />
+            <button
+              type="button"
+              onClick={() => { setImageBase64(null); setImagePreview(null); }}
+              className="absolute -right-1 -top-1 rounded-full bg-destructive p-0.5 text-destructive-foreground"
+              aria-label="Xoá ảnh"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
+        {/* Input bar */}
+        <div className="flex items-center gap-1.5 border-t pt-2">
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            onChange={handleImageSelect}
+          />
+          <Button type="button" variant="ghost" size="icon-sm" onClick={() => fileRef.current?.click()} disabled={loading}>
+            <ImagePlus className="size-4" />
+          </Button>
+          <VoiceInputButton
+            onResult={(t) => setText((prev) => prev + t)}
+            onInterim={(t) => setText(t)}
+            disabled={loading}
+          />
+          <Input
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
+            placeholder="Nhập kết quả hoặc gửi ảnh..."
+            className="h-8 flex-1 text-sm"
+            disabled={loading}
+          />
+          <Button type="button" variant="ghost" size="icon-sm" onClick={send} disabled={loading || (!text.trim() && !imageBase64)}>
+            <Send className="size-4" />
+          </Button>
+        </div>
+
+        {/* Apply button */}
+        {canApply && (
+          <div className="flex items-center justify-between border-t pt-2">
+            <span className="text-sm text-muted-foreground">{selected.size} trận được chọn</span>
+            <Button type="button" size="sm" onClick={handleApply}>
+              Áp dụng {selected.size} trận
+            </Button>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
 }
