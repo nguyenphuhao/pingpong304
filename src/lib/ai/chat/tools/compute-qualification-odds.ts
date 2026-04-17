@@ -21,6 +21,9 @@ export const computeQualificationOddsTool = tool({
       const groups = await fetchDoublesGroups();
       const group = groups.find((g) => g.id === groupId);
       if (!group) throw new Error("NOT_FOUND: bảng không tồn tại");
+      if (!group.entries.some((e) => e.id === entityId)) {
+        throw new Error(`NOT_FOUND: ${entityId} không có trong bảng ${groupId}`);
+      }
       const matches = await fetchDoublesMatchesByGroup(groupId);
       return computeDoublesOdds({
         entries: group.entries,
@@ -32,6 +35,9 @@ export const computeQualificationOddsTool = tool({
     const groups = await fetchTeamGroups();
     const group = groups.find((g) => g.id === groupId);
     if (!group) throw new Error("NOT_FOUND: bảng không tồn tại");
+    if (!group.entries.some((e) => e.id === entityId)) {
+      throw new Error(`NOT_FOUND: ${entityId} không có trong bảng ${groupId}`);
+    }
     const matches = await fetchTeamMatchesByGroup(groupId);
     return computeTeamsOdds({
       entries: group.entries,
