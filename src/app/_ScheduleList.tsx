@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CalendarDays, ChevronDown, ChevronRight, Swords } from "lucide-react";
+import { CalendarDays, ChevronDown, Search, Swords } from "lucide-react";
 import { groupColor } from "./_groupColors";
 import type { MatchResolved, TeamMatchResolved, SetScore } from "@/lib/schemas/match";
 import type { DoublesKoResolved, TeamKoResolved } from "@/lib/schemas/knockout";
@@ -81,6 +81,7 @@ export function GroupScheduleList({
 }) {
   const [open, setOpen] = useState(false);
   const [filter, setFilter] = useState("all");
+  const [search, setSearch] = useState("");
 
   const allOptions = [
     { id: "all", label: "Tất cả" },
@@ -118,7 +119,11 @@ export function GroupScheduleList({
     }
   }
 
-  const filtered = filter === "all" ? all : all.filter((m) => m.groupId === filter);
+  const byGroup = filter === "all" ? all : all.filter((m) => m.groupId === filter);
+  const q = search.trim().toLowerCase();
+  const filtered = q
+    ? byGroup.filter((m) => m.sideA.toLowerCase().includes(q) || m.sideB.toLowerCase().includes(q))
+    : byGroup;
   const doneCount = all.filter((m) => m.status === "done" || m.status === "forfeit").length;
 
   return (
@@ -139,16 +144,29 @@ export function GroupScheduleList({
       </button>
 
       {open && (
-        <div className="rounded-lg bg-card">
-          <FilterChips
-            options={allOptions}
-            active={filter}
-            onSelect={setFilter}
-            activeColor="bg-blue-500/20 text-blue-600 dark:text-blue-400"
-          />
-          <div className="divide-y divide-border">
+        <div>
+          <div className="flex items-center gap-2">
+            <FilterChips
+              options={allOptions}
+              active={filter}
+              onSelect={setFilter}
+              activeColor="bg-blue-500/20 text-blue-600 dark:text-blue-400"
+            />
+          </div>
+          {/* Search by player name */}
+          <div className="relative mb-3">
+            <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Tìm theo tên VĐV..."
+              className="w-full rounded-lg border bg-background py-1.5 pl-8 pr-3 text-sm outline-none placeholder:text-muted-foreground focus:ring-1 focus:ring-ring"
+            />
+          </div>
+          <div className="flex flex-col gap-2">
             {filtered.map((m) => (
-              <CompactRow
+              <MatchCardFull
                 key={m.id}
                 groupId={m.groupId}
                 groupName={m.groupName}
@@ -160,6 +178,11 @@ export function GroupScheduleList({
                 sets={m.sets}
               />
             ))}
+            {filtered.length === 0 && (
+              <div className="py-4 text-center text-sm text-muted-foreground">
+                Không tìm thấy trận nào
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -228,23 +251,34 @@ export function KnockoutScheduleList({
       </button>
 
       {open && (
-        <div className="rounded-lg bg-card">
+        <div>
           <FilterChips
             options={allOptions}
             active={filter}
             onSelect={setFilter}
             activeColor="bg-orange-500/20 text-orange-600 dark:text-orange-400"
           />
-          <div className="divide-y divide-border">
+          <div className="flex flex-col gap-2">
             {rows.map((r) => (
-              <div key={r.id} className="flex items-center gap-1.5 px-2.5 py-2 text-xs">
-                <span className="shrink-0 min-w-[24px] text-xs font-semibold text-orange-500">
-                  {r.roundLabel}
-                </span>
-                <span className="min-w-0 flex-1 truncate">
-                  {r.sideA} vs {r.sideB}
-                </span>
-                <StatusPill status={r.status} scoreA={r.scoreA} scoreB={r.scoreB} />
+              <div key={r.id} className="rounded-xl border p-3">
+                <div className="mb-2 flex items-center gap-1.5">
+                  <span className="shrink-0 rounded px-1.5 py-0.5 text-xs font-semibold bg-orange-500/15 text-orange-600 dark:text-orange-400">
+                    {r.roundLabel}
+                  </span>
+                  <StatusPill status={r.status} scoreA={r.scoreA} scoreB={r.scoreB} />
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="min-w-0 flex-1 space-y-0.5 text-sm">
+                    <div className={r.scoreA > r.scoreB ? "font-semibold" : ""}>{r.sideA}</div>
+                    <div className={r.scoreB > r.scoreA ? "font-semibold" : "text-muted-foreground"}>{r.sideB}</div>
+                  </div>
+                  {(r.status === "done" || r.status === "forfeit") && (
+                    <div className="flex shrink-0 flex-col items-end text-lg font-bold tabular-nums leading-tight">
+                      <span className={r.scoreA > r.scoreB ? "" : "text-muted-foreground"}>{r.scoreA}</span>
+                      <span className={r.scoreB > r.scoreA ? "" : "text-muted-foreground"}>{r.scoreB}</span>
+                    </div>
+                  )}
+                </div>
               </div>
             ))}
           </div>
@@ -254,53 +288,51 @@ export function KnockoutScheduleList({
   );
 }
 
-// ── Compact Row (group matches) ──
+// ── Full Match Card (group matches) ──
 
-function CompactRow({
+function MatchCardFull({
   groupId, groupName, sideA, sideB, status, scoreA, scoreB, sets,
 }: {
   groupId: string; groupName: string; sideA: string; sideB: string;
   status: string; scoreA: number; scoreB: number; sets: SetScore[];
 }) {
-  const [expanded, setExpanded] = useState(false);
   const c = groupColor(groupId);
-
-  const abbrev = (name: string) =>
-    name.split(/\s*–\s*/).map((part) =>
-      part.split(/\s+/).map((w) => w[0]?.toUpperCase() ?? "").join("")
-    ).join("–");
+  const done = status === "done" || status === "forfeit";
+  const aWon = done && scoreA > scoreB;
+  const bWon = done && scoreB > scoreA;
 
   return (
-    <div>
-      <button
-        type="button"
-        onClick={() => setExpanded(!expanded)}
-        className="flex w-full items-center gap-1.5 px-2.5 py-2 text-xs"
-      >
-        <span className={`shrink-0 rounded px-1 py-0.5 text-xs font-semibold ${c.badge}`}>
+    <div className="rounded-xl border p-3">
+      {/* Header */}
+      <div className="mb-2 flex items-center gap-1.5">
+        <span className={`shrink-0 rounded px-1.5 py-0.5 text-xs font-semibold ${c.badge}`}>
           {groupName.replace(/^Bảng\s*/i, "")}
         </span>
-        <span className="min-w-0 flex-1 truncate text-left">
-          {abbrev(sideA)} vs {abbrev(sideB)}
-        </span>
         <StatusPill status={status} scoreA={scoreA} scoreB={scoreB} />
-        <ChevronRight className={`size-3 shrink-0 text-muted-foreground transition-transform ${expanded ? "rotate-90" : ""}`} />
-      </button>
-      {expanded && (
-        <div className="border-t border-dashed px-2.5 pb-2.5 pt-2 text-sm">
-          <div className="space-y-0.5">
-            <div className={scoreA > scoreB ? "font-semibold" : "text-muted-foreground"}>{sideA}</div>
-            <div className={scoreB > scoreA ? "font-semibold" : "text-muted-foreground"}>{sideB}</div>
+      </div>
+
+      {/* Names + Scores */}
+      <div className="flex items-center gap-3">
+        <div className="min-w-0 flex-1 space-y-0.5 text-sm">
+          <div className={aWon ? "font-semibold" : ""}>{sideA}</div>
+          <div className={bWon ? "font-semibold" : "text-muted-foreground"}>{sideB}</div>
+        </div>
+        {done && (
+          <div className="flex shrink-0 flex-col items-end text-lg font-bold tabular-nums leading-tight">
+            <span className={aWon ? "" : "text-muted-foreground"}>{scoreA}</span>
+            <span className={bWon ? "" : "text-muted-foreground"}>{scoreB}</span>
           </div>
-          {sets.length > 0 && (
-            <div className="mt-1.5 flex flex-wrap gap-1">
-              {sets.map((s, i) => (
-                <span key={i} className="rounded bg-muted px-1.5 py-0.5 text-xs tabular-nums">
-                  {s.a}-{s.b}
-                </span>
-              ))}
-            </div>
-          )}
+        )}
+      </div>
+
+      {/* Set scores */}
+      {sets.length > 0 && (
+        <div className="mt-1.5 flex flex-wrap gap-1">
+          {sets.map((s, i) => (
+            <span key={i} className="rounded bg-muted px-1.5 py-0.5 text-xs tabular-nums">
+              {s.a}-{s.b}
+            </span>
+          ))}
         </div>
       )}
     </div>
