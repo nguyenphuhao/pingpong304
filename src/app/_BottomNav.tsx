@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Home, Settings, Shield, Users } from "lucide-react";
+import { SettingsSheet } from "./_SettingsSheet";
 
 export function BottomNav() {
   const pathname = usePathname() ?? "/";
@@ -58,7 +59,7 @@ export function BottomNav() {
           />
         </div>
       </nav>
-      {/* SettingsSheet is rendered here in Task 8. */}
+      <SettingsSheet open={settingsOpen} onOpenChange={setSettingsOpen} />
     </>
   );
 }
