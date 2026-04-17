@@ -258,38 +258,73 @@ function RankBadge({ rank }: { rank: number; active: boolean }) {
 }
 
 function markdownToHtml(md: string): string {
-  return md
-    .split("\n\n")
-    .map((block) => {
-      block = block.trim();
-      if (!block) return "";
-      // Headers
-      if (block.startsWith("### ")) return `<h3>${esc(block.slice(4))}</h3>`;
-      if (block.startsWith("## ")) return `<h2>${esc(block.slice(3))}</h2>`;
-      if (block.startsWith("# ")) return `<h1>${esc(block.slice(2))}</h1>`;
-      // Bullet list
-      const lines = block.split("\n");
-      if (lines.every((l) => /^[-*] /.test(l))) {
-        const items = lines.map((l) => `<li>${inlineFmt(l.replace(/^[-*] /, ""))}</li>`).join("");
-        return `<ul>${items}</ul>`;
-      }
-      // Numbered list
-      if (lines.every((l) => /^\d+\. /.test(l))) {
-        const items = lines.map((l) => `<li>${inlineFmt(l.replace(/^\d+\. /, ""))}</li>`).join("");
-        return `<ol>${items}</ol>`;
-      }
-      // Paragraph
-      return `<p>${inlineFmt(block.replace(/\n/g, "<br/>"))}</p>`;
-    })
-    .join("");
-}
+  const lines = md.split("\n");
+  const html: string[] = [];
+  let inList: "ul" | "ol" | null = null;
 
-function esc(s: string): string {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const flush = () => {
+    if (inList) {
+      html.push(`</${inList}>`);
+      inList = null;
+    }
+  };
+
+  for (const raw of lines) {
+    const line = raw.trimEnd();
+
+    // Empty line → close list, add spacing
+    if (!line) {
+      flush();
+      continue;
+    }
+
+    // Headers
+    const hMatch = /^(#{1,3}) (.+)/.exec(line);
+    if (hMatch) {
+      flush();
+      const level = hMatch[1].length;
+      html.push(`<h${level}>${inlineFmt(hMatch[2])}</h${level}>`);
+      continue;
+    }
+
+    // Bullet list
+    const bulletMatch = /^[-*•] (.+)/.exec(line);
+    if (bulletMatch) {
+      if (inList !== "ul") {
+        flush();
+        html.push("<ul>");
+        inList = "ul";
+      }
+      html.push(`<li>${inlineFmt(bulletMatch[1])}</li>`);
+      continue;
+    }
+
+    // Numbered list
+    const numMatch = /^\d+[.)]\s*(.+)/.exec(line);
+    if (numMatch) {
+      if (inList !== "ol") {
+        flush();
+        html.push("<ol>");
+        inList = "ol";
+      }
+      html.push(`<li>${inlineFmt(numMatch[1])}</li>`);
+      continue;
+    }
+
+    // Regular text
+    flush();
+    html.push(`<p>${inlineFmt(line)}</p>`);
+  }
+
+  flush();
+  return html.join("");
 }
 
 function inlineFmt(s: string): string {
-  return esc(s)
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
     .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
     .replace(/\*(.+?)\*/g, "<em>$1</em>");
 }
