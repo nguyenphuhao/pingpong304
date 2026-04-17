@@ -92,6 +92,14 @@ function LiveSection({
 
   return (
     <section>
+      <div className="mb-2 flex items-center gap-1.5">
+        <span className="relative flex size-2">
+          <span className="absolute inline-flex size-full animate-ping rounded-full bg-red-500 opacity-75" />
+          <span className="relative inline-flex size-2 rounded-full bg-red-500" />
+        </span>
+        <span className="text-sm font-semibold text-green-600 dark:text-green-400">Đang đấu</span>
+        <span className="text-xs text-muted-foreground">{liveMatches.length} trận</span>
+      </div>
       <SwipeCarousel dotColor="bg-green-500">{cards}</SwipeCarousel>
     </section>
   );
@@ -148,6 +156,10 @@ function RecentSection({
 
   return (
     <section>
+      <div className="mb-2 flex items-center gap-1.5">
+        <span className="text-sm font-semibold">Kết quả gần nhất</span>
+        <span className="text-xs text-muted-foreground">{recentResults.length} trận</span>
+      </div>
       <SwipeCarousel dotColor="bg-foreground">{cards}</SwipeCarousel>
     </section>
   );
