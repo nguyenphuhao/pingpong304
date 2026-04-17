@@ -2328,6 +2328,7 @@ function TeamKoSubMatches({
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inFlight = useRef(false);
+  const changedSinceInFlight = useRef(false);
   const subsRef = useRef(subs);
   useEffect(() => { subsRef.current = subs; }, [subs]);
 
@@ -2338,11 +2339,17 @@ function TeamKoSubMatches({
 
   const doSave = async (nextSubs: SubMatchResolved[]) => {
     inFlight.current = true;
+    changedSinceInFlight.current = false;
     setSaveState("saving");
     try {
       await patchKoMatch("teams", match.id, {
         individual: nextSubs.map(subMatchToPatch),
       });
+      if (changedSinceInFlight.current) {
+        inFlight.current = false;
+        scheduleSave();
+        return;
+      }
       setSaveState("saved");
       onSaved();
     } catch (e) {
@@ -2357,14 +2364,20 @@ function TeamKoSubMatches({
     if (saveTimer.current) clearTimeout(saveTimer.current);
     setSaveState("saving");
     saveTimer.current = setTimeout(() => {
-      if (inFlight.current) return;
+      if (inFlight.current) {
+        changedSinceInFlight.current = true;
+        return;
+      }
       void doSave(subsRef.current);
-    }, 400);
+    }, 600);
   };
 
   useEffect(() => {
     return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
   }, []);
+
+  // Only save for player/score changes, not label/kind edits
+  const SAVE_KEYS = new Set(["playersA", "playersB", "sets", "bestOf"]);
 
   const updateSub = (subId: string, patch: Partial<SubMatchResolved>) => {
     setSubs((prev) => {
@@ -2372,7 +2385,9 @@ function TeamKoSubMatches({
       subsRef.current = next;
       return next;
     });
-    scheduleSave();
+    if (Object.keys(patch).some((k) => SAVE_KEYS.has(k))) {
+      scheduleSave();
+    }
   };
 
   return (
