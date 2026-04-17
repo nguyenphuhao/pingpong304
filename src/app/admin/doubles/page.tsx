@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ContentWorkspace } from "../_components";
-import { MOCK_DOUBLES_KO } from "../_mock";
+import { fetchDoublesKo } from "@/lib/db/knockout";
 import { supabaseServer } from "@/lib/supabase/server";
 import { fetchPairs } from "@/lib/db/pairs";
 import { fetchDoublesGroups } from "@/lib/db/groups";
@@ -26,10 +26,11 @@ async function fetchPlayers(): Promise<Player[]> {
 }
 
 export default async function DoublesAdminPage() {
-  const [players, pairs, groups] = await Promise.all([
+  const [players, pairs, groups, knockout] = await Promise.all([
     fetchPlayers(),
     fetchPairs(),
     fetchDoublesGroups(),
+    fetchDoublesKo(),
   ]);
 
   return (
@@ -56,7 +57,7 @@ export default async function DoublesAdminPage() {
         players={players}
         pairs={pairs}
         groups={groups}
-        knockout={MOCK_DOUBLES_KO}
+        knockout={knockout}
       />
     </main>
   );
