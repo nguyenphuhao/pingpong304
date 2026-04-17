@@ -2,6 +2,7 @@
 
 import { Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
+import { useEffect, useState } from "react";
 import {
   Sheet,
   SheetContent,
@@ -19,8 +20,14 @@ export function SettingsSheet({
   open: boolean;
   onOpenChange: (v: boolean) => void;
 }) {
+  const [mounted, setMounted] = useState(false);
   const { theme, setTheme } = useTheme();
   const { size, setSize } = useFontSize();
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMounted(true);
+  }, []);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -38,13 +45,13 @@ export function SettingsSheet({
           </div>
           <div className="grid grid-cols-2 gap-2">
             <ThemePill
-              active={theme !== "dark"}
+              active={mounted && theme !== "dark"}
               onClick={() => setTheme("light")}
               icon={<Sun className="size-4" />}
               label="Sáng"
             />
             <ThemePill
-              active={theme === "dark"}
+              active={mounted && theme === "dark"}
               onClick={() => setTheme("dark")}
               icon={<Moon className="size-4" />}
               label="Tối"

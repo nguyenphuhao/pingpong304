@@ -22,13 +22,16 @@ import { useFontSize } from "./_FontSizeProvider";
 export function OnboardingDialog() {
   const pathname = usePathname() ?? "/";
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const { theme, setTheme } = useTheme();
   const { size, setSize } = useFontSize();
 
   useEffect(() => {
-    if (pathname.startsWith("/admin")) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (!isOnboarded(window.localStorage)) setOpen(true);
-  }, [pathname]);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMounted(true);
+  }, []);
 
   const finish = () => {
     markOnboarded(window.localStorage);
@@ -65,13 +68,13 @@ export function OnboardingDialog() {
           </div>
           <div className="grid grid-cols-2 gap-2">
             <Pill
-              active={theme !== "dark"}
+              active={mounted && theme !== "dark"}
               onClick={() => setTheme("light")}
               icon={<Sun className="size-4" />}
               label="Sáng"
             />
             <Pill
-              active={theme === "dark"}
+              active={mounted && theme === "dark"}
               onClick={() => setTheme("dark")}
               icon={<Moon className="size-4" />}
               label="Tối"
