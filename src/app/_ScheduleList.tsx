@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { CalendarDays, ChevronDown, Search, Swords } from "lucide-react";
 import { groupColor } from "./_groupColors";
-import type { MatchResolved, TeamMatchResolved, SetScore } from "@/lib/schemas/match";
+import type { MatchResolved, TeamMatchResolved, SubMatchResolved, SetScore } from "@/lib/schemas/match";
 import type { DoublesKoResolved, TeamKoResolved } from "@/lib/schemas/knockout";
 import type { GroupResolved } from "@/lib/schemas/group";
 
@@ -96,6 +96,7 @@ export function GroupScheduleList({
     id: string; groupId: string; groupName: string;
     sideA: string; sideB: string; status: string;
     scoreA: number; scoreB: number; sets: SetScore[];
+    individual: SubMatchResolved[];
   }> = [];
   for (const g of groups) {
     const matches = matchesByGroup.get(g.id) ?? [];
@@ -107,6 +108,7 @@ export function GroupScheduleList({
           id: dm.id, groupId: g.id, groupName: g.name,
           sideA: dm.pairA.label, sideB: dm.pairB.label,
           status: dm.status, scoreA: a, scoreB: b, sets: dm.sets,
+          individual: [],
         });
       } else {
         const tm = m as TeamMatchResolved;
@@ -114,6 +116,7 @@ export function GroupScheduleList({
           id: tm.id, groupId: g.id, groupName: g.name,
           sideA: tm.teamA.name, sideB: tm.teamB.name,
           status: tm.status, scoreA: tm.scoreA, scoreB: tm.scoreB, sets: [],
+          individual: tm.individual,
         });
       }
     }
@@ -176,6 +179,7 @@ export function GroupScheduleList({
                 scoreA={m.scoreA}
                 scoreB={m.scoreB}
                 sets={m.sets}
+                individual={m.individual}
               />
             ))}
             {filtered.length === 0 && (
@@ -291,10 +295,11 @@ export function KnockoutScheduleList({
 // ── Full Match Card (group matches) ──
 
 function MatchCardFull({
-  groupId, groupName, sideA, sideB, status, scoreA, scoreB, sets,
+  groupId, groupName, sideA, sideB, status, scoreA, scoreB, sets, individual,
 }: {
   groupId: string; groupName: string; sideA: string; sideB: string;
   status: string; scoreA: number; scoreB: number; sets: SetScore[];
+  individual: SubMatchResolved[];
 }) {
   const c = groupColor(groupId);
   const done = status === "done" || status === "forfeit";
@@ -325,7 +330,7 @@ function MatchCardFull({
         )}
       </div>
 
-      {/* Set scores */}
+      {/* Set scores (doubles) */}
       {sets.length > 0 && (
         <div className="mt-1.5 flex flex-wrap gap-1">
           {sets.map((s, i) => (
@@ -333,6 +338,44 @@ function MatchCardFull({
               {s.a}-{s.b}
             </span>
           ))}
+        </div>
+      )}
+
+      {/* Sub-matches (teams) */}
+      {individual.length > 0 && (
+        <div className="mt-2 space-y-1.5 border-t pt-2">
+          {individual.map((sub) => {
+            const { a, b } = setsSummary(sub.sets);
+            const hasResult = sub.sets.length > 0;
+            const subAWon = hasResult && a > b;
+            const subBWon = hasResult && b > a;
+            const playersA = sub.playersA.map((p) => p.name).join(" + ") || "Chưa gán";
+            const playersB = sub.playersB.map((p) => p.name).join(" + ") || "Chưa gán";
+            return (
+              <div key={sub.id} className="rounded-lg bg-muted/40 p-2">
+                <div className="mb-1 flex items-center justify-between text-xs text-muted-foreground">
+                  <span className="font-medium text-foreground">{sub.label}</span>
+                  <span>thắng {Math.ceil(sub.bestOf / 2)}/{sub.bestOf}</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <div className="min-w-0 flex-1 space-y-0.5">
+                    <div className={subAWon ? "font-semibold" : "text-muted-foreground"}>
+                      {playersA}
+                    </div>
+                    <div className={subBWon ? "font-semibold" : "text-muted-foreground"}>
+                      {playersB}
+                    </div>
+                  </div>
+                  {hasResult && (
+                    <div className="flex shrink-0 flex-col items-end text-base font-semibold tabular-nums leading-tight">
+                      <span className={subAWon ? "" : "text-muted-foreground"}>{a}</span>
+                      <span className={subBWon ? "" : "text-muted-foreground"}>{b}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
