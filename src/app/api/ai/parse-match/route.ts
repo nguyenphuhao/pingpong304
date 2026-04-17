@@ -39,7 +39,7 @@ const BatchGroupSchema = z.object({
 
 const RequestSchema = z.object({
   text: z.string().min(1).optional(),
-  imageBase64: z.string().min(1).optional(),
+  imageBase64: z.string().min(1).max(8_000_000).optional(),
   match: SingleMatchSchema.optional(),
   group: BatchGroupSchema.optional(),
 }).refine((d) => d.text != null || d.imageBase64 != null, {

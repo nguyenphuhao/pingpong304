@@ -222,7 +222,6 @@ export function AiSingleMatchButton({
           </Button>
           <VoiceInputButton
             onResult={(t) => setText((prev) => prev + t)}
-            onInterim={(t) => setText(t)}
             disabled={loading}
           />
           <Input
@@ -586,7 +585,6 @@ export function AiBatchGroupButton({
           </Button>
           <VoiceInputButton
             onResult={(t) => setText((prev) => prev + t)}
-            onInterim={(t) => setText(t)}
             disabled={loading}
           />
           <Input

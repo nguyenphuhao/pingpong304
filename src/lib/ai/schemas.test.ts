@@ -30,6 +30,10 @@ describe("MatchResultSchema", () => {
     expect(result.subMatches).toBeUndefined();
   });
 
+  test("rejects empty sets with no subMatches", () => {
+    expect(() => MatchResultSchema.parse({ sets: [] })).toThrow(/Cần ít nhất 1 set/);
+  });
+
   test("rejects scores outside 0-99 (a > 99)", () => {
     expect(() =>
       MatchResultSchema.parse({ sets: [{ a: 100, b: 0 }] }),
@@ -173,7 +177,7 @@ describe("ParseMatchResponseSchema", () => {
           matchId: "match-001",
           sideA: "A",
           sideB: "B",
-          result: { sets: [] },
+          result: { sets: [{ a: 11, b: 8 }] },
           alreadyHasResult: false,
         },
       ],

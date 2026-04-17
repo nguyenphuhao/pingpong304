@@ -383,15 +383,19 @@ export function DoublesSchedule({
             })),
           }}
           onApply={async (results) => {
+            let successCount = 0;
             for (const r of results) {
               try {
                 const updated = await patchDoublesMatch(r.matchId, { sets: r.sets });
                 handleMatchUpdated(updated);
+                successCount++;
               } catch (err) {
                 toast.error(`Lỗi cập nhật trận: ${err instanceof Error ? err.message : "Unknown"}`);
               }
             }
-            toast.success(`Đã cập nhật ${results.length} trận`);
+            if (successCount > 0) {
+              toast.success(`Đã cập nhật ${successCount} trận`);
+            }
           }}
         />
       )}
@@ -663,6 +667,7 @@ export function TeamSchedule({
             })),
           }}
           onApply={async (results) => {
+            let successCount = 0;
             for (const r of results) {
               try {
                 const existing = matches.find((m) => m.id === r.matchId);
@@ -681,11 +686,14 @@ export function TeamSchedule({
                 });
                 const updated = await patchTeamMatch(r.matchId, { individual: updatedSubs });
                 handleMatchUpdated(updated);
+                successCount++;
               } catch (err) {
                 toast.error(`Lỗi cập nhật trận: ${err instanceof Error ? err.message : "Unknown"}`);
               }
             }
-            toast.success(`Đã cập nhật ${results.length} trận`);
+            if (successCount > 0) {
+              toast.success(`Đã cập nhật ${successCount} trận`);
+            }
           }}
         />
       )}

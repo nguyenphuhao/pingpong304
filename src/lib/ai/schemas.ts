@@ -13,7 +13,10 @@ const SubMatchResultSchema = z.object({
 export const MatchResultSchema = z.object({
   sets: z.array(SetScoreSchema).max(5),
   subMatches: z.array(SubMatchResultSchema).max(7).optional(),
-});
+}).refine(
+  (d) => d.sets.length > 0 || (d.subMatches != null && d.subMatches.length > 0),
+  { message: "Cần ít nhất 1 set hoặc 1 trận con" },
+);
 
 export const SingleResultSchema = z.object({
   status: z.literal("ok"),
