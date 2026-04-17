@@ -47,7 +47,7 @@ export default async function DoublesGroupDetailPage({
       <DoublesSchedule
         groupId={group.id}
         groupName={group.name}
-        entries={group.entries.map((e) => e.label)}
+        entries={group.entries}
         matches={matches}
       />
     </main>

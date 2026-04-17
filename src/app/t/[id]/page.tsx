@@ -28,7 +28,7 @@ export default async function PublicTeamGroupPage({
       <TeamSchedule
         groupId={group.id}
         groupName={group.name}
-        entries={group.entries.map((e) => e.label)}
+        entries={group.entries}
         matches={matches}
         teamPlayersByTeamId={teamPlayersByTeamId}
         readOnly
