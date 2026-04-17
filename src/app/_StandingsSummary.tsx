@@ -28,7 +28,7 @@ export function StandingsSummary({
     <section>
       <div className="mb-2 flex items-center gap-2">
         <Trophy className="size-4 text-yellow-500" />
-        <h2 className="text-sm font-semibold">Bảng xếp hạng</h2>
+        <h2 className="text-base font-semibold">Bảng xếp hạng</h2>
       </div>
 
       <SwipeCarousel dotColor="bg-blue-500">
@@ -41,11 +41,11 @@ export function StandingsSummary({
               const played = rows.some((r) => r.played > 0);
               return (
                 <div key={g.id} className="rounded-lg bg-card p-2.5">
-                  <div className={`mb-1.5 text-[10px] font-semibold ${c.badge} inline-block rounded px-1.5 py-0.5`}>
+                  <div className={`mb-1.5 text-xs font-semibold ${c.badge} inline-block rounded px-1.5 py-0.5`}>
                     {g.name.replace(/^Bảng\s*/i, "")}
                   </div>
                   {!played ? (
-                    <div className="text-xs italic text-muted-foreground">
+                    <div className="text-sm italic text-muted-foreground">
                       Chưa có kết quả
                     </div>
                   ) : (
@@ -53,7 +53,7 @@ export function StandingsSummary({
                       {top2.map((r, ri) => (
                         <div
                           key={r.entry}
-                          className={`flex items-center justify-between text-[11px] ${
+                          className={`flex items-center justify-between text-xs ${
                             ri > 0 ? "text-muted-foreground" : ""
                           }`}
                         >
@@ -85,7 +85,7 @@ export function StandingsSummary({
 
       <Link
         href={prefix}
-        className="mt-1.5 block text-center text-[11px] text-blue-500"
+        className="mt-1.5 block text-center text-xs text-blue-500"
       >
         Xem chi tiết từng bảng →
       </Link>

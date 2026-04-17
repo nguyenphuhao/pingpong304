@@ -45,18 +45,18 @@ export function MatchCard({
             <span className="relative inline-flex size-2 rounded-full bg-red-500" />
           </span>
         )}
-        <span className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${c.badge}`}>
+        <span className={`rounded px-1.5 py-0.5 text-xs font-semibold ${c.badge}`}>
           {groupName.replace(/^Bảng\s*/i, "")}
         </span>
         {isLive ? (
-          <span className="text-[10px] font-medium text-green-400">LIVE</span>
+          <span className="text-xs font-medium text-green-400">LIVE</span>
         ) : (
-          <span className="rounded-full bg-green-500/15 px-1.5 py-0.5 text-[9px] font-medium text-green-400">
+          <span className="rounded-full bg-green-500/15 px-1.5 py-0.5 text-[10px] font-medium text-green-400">
             Đã xong
           </span>
         )}
         {table != null && (
-          <span className="ml-auto text-[10px] text-muted-foreground">
+          <span className="ml-auto text-xs text-muted-foreground">
             Bàn {table}
           </span>
         )}
@@ -64,13 +64,13 @@ export function MatchCard({
 
       {/* Names + Scores */}
       <div className="flex items-center gap-3">
-        <div className="min-w-0 flex-1 space-y-0.5 text-sm">
+        <div className="min-w-0 flex-1 space-y-0.5 text-base">
           <div className={`truncate ${aWon ? "font-semibold" : ""}`}>{sideA}</div>
           <div className={`truncate ${bWon ? "font-semibold" : "text-muted-foreground"}`}>
             {sideB}
           </div>
         </div>
-        <div className="flex shrink-0 flex-col items-end text-lg font-bold tabular-nums leading-tight">
+        <div className="flex shrink-0 flex-col items-end text-xl font-bold tabular-nums leading-tight">
           <span className={aWon ? (isLive ? "text-green-400" : "") : "text-muted-foreground"}>
             {scoreA}
           </span>
@@ -86,7 +86,7 @@ export function MatchCard({
           {sets.map((s, i) => (
             <span
               key={i}
-              className={`inline-flex min-w-[36px] items-center justify-center rounded px-1.5 py-0.5 text-[10px] tabular-nums ${
+              className={`inline-flex min-w-[36px] items-center justify-center rounded px-1.5 py-0.5 text-xs tabular-nums ${
                 isLive ? "bg-green-900/50" : "bg-muted"
               }`}
             >

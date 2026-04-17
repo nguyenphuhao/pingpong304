@@ -20,20 +20,20 @@ function setsSummary(sets: SetScore[]): { a: number; b: number } {
 function StatusPill({ status, scoreA, scoreB }: { status: string; scoreA?: number; scoreB?: number }) {
   if (status === "done" || status === "forfeit") {
     return (
-      <span className="rounded-full bg-green-500/15 px-1.5 py-0.5 text-[9px] font-medium text-green-600 dark:text-green-400">
+      <span className="rounded-full bg-green-500/15 px-1.5 py-0.5 text-xs font-medium text-green-600 dark:text-green-400">
         {scoreA != null ? `${scoreA}-${scoreB}` : "Xong"}
       </span>
     );
   }
   if (status === "live") {
     return (
-      <span className="rounded-full bg-red-500/15 px-1.5 py-0.5 text-[9px] font-medium text-red-600 dark:text-red-400">
+      <span className="rounded-full bg-red-500/15 px-1.5 py-0.5 text-xs font-medium text-red-600 dark:text-red-400">
         Live
       </span>
     );
   }
   return (
-    <span className="rounded-full bg-muted px-1.5 py-0.5 text-[9px] text-muted-foreground">
+    <span className="rounded-full bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
       Chưa đấu
     </span>
   );
@@ -57,7 +57,7 @@ function FilterChips({
           key={o.id}
           type="button"
           onClick={() => onSelect(o.id)}
-          className={`rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors ${
+          className={`rounded-full px-2 py-0.5 text-xs font-medium transition-colors ${
             active === o.id ? activeColor : "bg-muted text-muted-foreground"
           }`}
         >
@@ -130,9 +130,9 @@ export function GroupScheduleList({
       >
         <span className="flex items-center gap-1.5">
           <CalendarDays className="size-4 text-muted-foreground" />
-          <span className="text-sm font-semibold">Lịch vòng bảng</span>
+          <span className="text-base font-semibold">Lịch vòng bảng</span>
         </span>
-        <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+        <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
           {doneCount}/{all.length} xong
           <ChevronDown className={`size-3.5 transition-transform ${open ? "rotate-180" : ""}`} />
         </span>
@@ -219,9 +219,9 @@ export function KnockoutScheduleList({
       >
         <span className="flex items-center gap-1.5">
           <Swords className="size-4 text-muted-foreground" />
-          <span className="text-sm font-semibold">Vòng loại trực tiếp</span>
+          <span className="text-base font-semibold">Vòng loại trực tiếp</span>
         </span>
-        <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+        <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
           {doneCount}/{matches.length} xong
           <ChevronDown className={`size-3.5 transition-transform ${open ? "rotate-180" : ""}`} />
         </span>
@@ -237,8 +237,8 @@ export function KnockoutScheduleList({
           />
           <div className="divide-y divide-border">
             {rows.map((r) => (
-              <div key={r.id} className="flex items-center gap-1.5 px-2.5 py-2 text-[11px]">
-                <span className="shrink-0 min-w-[24px] text-[9px] font-semibold text-orange-500">
+              <div key={r.id} className="flex items-center gap-1.5 px-2.5 py-2 text-xs">
+                <span className="shrink-0 min-w-[24px] text-xs font-semibold text-orange-500">
                   {r.roundLabel}
                 </span>
                 <span className="min-w-0 flex-1 truncate">
@@ -275,9 +275,9 @@ function CompactRow({
       <button
         type="button"
         onClick={() => setExpanded(!expanded)}
-        className="flex w-full items-center gap-1.5 px-2.5 py-2 text-[11px]"
+        className="flex w-full items-center gap-1.5 px-2.5 py-2 text-xs"
       >
-        <span className={`shrink-0 rounded px-1 py-0.5 text-[9px] font-semibold ${c.badge}`}>
+        <span className={`shrink-0 rounded px-1 py-0.5 text-xs font-semibold ${c.badge}`}>
           {groupName.replace(/^Bảng\s*/i, "")}
         </span>
         <span className="min-w-0 flex-1 truncate text-left">
@@ -287,7 +287,7 @@ function CompactRow({
         <ChevronRight className={`size-3 shrink-0 text-muted-foreground transition-transform ${expanded ? "rotate-90" : ""}`} />
       </button>
       {expanded && (
-        <div className="border-t border-dashed px-2.5 pb-2.5 pt-2 text-xs">
+        <div className="border-t border-dashed px-2.5 pb-2.5 pt-2 text-sm">
           <div className="space-y-0.5">
             <div className={scoreA > scoreB ? "font-semibold" : "text-muted-foreground"}>{sideA}</div>
             <div className={scoreB > scoreA ? "font-semibold" : "text-muted-foreground"}>{sideB}</div>
@@ -295,7 +295,7 @@ function CompactRow({
           {sets.length > 0 && (
             <div className="mt-1.5 flex flex-wrap gap-1">
               {sets.map((s, i) => (
-                <span key={i} className="rounded bg-muted px-1.5 py-0.5 text-[10px] tabular-nums">
+                <span key={i} className="rounded bg-muted px-1.5 py-0.5 text-xs tabular-nums">
                   {s.a}-{s.b}
                 </span>
               ))}

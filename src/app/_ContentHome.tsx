@@ -230,7 +230,7 @@ function FinalRanking({ knockout }: { knockout: KoMatch[] }) {
     <section className="rounded-2xl border-2 border-yellow-500/30 bg-gradient-to-b from-yellow-500/10 via-yellow-500/5 to-transparent p-4">
       <div className="mb-3 flex items-center gap-2">
         <Medal className="size-5 text-yellow-600" />
-        <h2 className="text-base font-bold">Kết quả chung cuộc</h2>
+        <h2 className="text-lg font-bold">Kết quả chung cuộc</h2>
       </div>
       <div className="flex flex-col gap-2">
         {rows.map((r, i) => (
@@ -241,11 +241,11 @@ function FinalRanking({ knockout }: { knockout: KoMatch[] }) {
             <span className="text-xl">{r.emoji}</span>
             <div className="min-w-0 flex-1">
               <span
-                className={`text-xs font-semibold uppercase tracking-wide ${r.text}`}
+                className={`text-sm font-semibold uppercase tracking-wide ${r.text}`}
               >
                 {r.label}
               </span>
-              <p className="text-sm font-medium">{r.name}</p>
+              <p className="text-base font-medium">{r.name}</p>
             </div>
           </div>
         ))}
@@ -286,10 +286,10 @@ export function ContentHome({
 
       {/* 2. Tournament name block */}
       <div className="border-l-2 border-emerald-500/50 pl-3">
-        <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+        <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
           CLB Bóng Bàn Bình Tân
         </p>
-        <p className="mt-0.5 text-sm leading-snug text-foreground/80">
+        <p className="mt-0.5 text-base leading-snug text-foreground/80">
           Giải Bóng Bàn Kỷ niệm 51 năm ngày thống nhất đất nước
         </p>
       </div>
