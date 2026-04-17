@@ -736,7 +736,14 @@ function TeamMatchCard({
         changedSinceInFlight.current = true;
         return;
       }
-      void doSave(statusRef.current, winnerIdRef.current, subsRef.current);
+      // Auto-promote to live when subs have sets entered
+      let s = statusRef.current;
+      if (s === "scheduled" && subsRef.current.some((sub) => sub.sets.length > 0)) {
+        s = "live";
+        setStatus(s);
+        statusRef.current = s;
+      }
+      void doSave(s, winnerIdRef.current, subsRef.current);
     }, 400);
   };
 
@@ -1709,9 +1716,12 @@ function EditDoublesMatchDialog({
   const removeRow = (i: number) => setRows((rs) => rs.filter((_, idx) => idx !== i));
 
   const onSubmit = async () => {
+    const parsedSets = parseSetsRows(rows);
+    const hasResults = parsedSets.length > 0;
+    const effectiveStatus = status === "scheduled" && hasResults ? "live" : status;
     const body: { sets?: SetScore[]; status?: Status; winner?: string | null } = {
-      sets: parseSetsRows(rows),
-      status,
+      sets: parsedSets,
+      status: effectiveStatus,
     };
     if (status === "forfeit") {
       if (!winnerId) {
