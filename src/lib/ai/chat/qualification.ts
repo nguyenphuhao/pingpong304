@@ -121,15 +121,12 @@ function computeOdds<M>(input: EngineInput<M>): OddsResult {
 
   // Per-own-match tally
   const ownTally = new Map<string, { winTotal: number; winQ: number; loseTotal: number; loseQ: number }>();
-  const externalTally = new Map<string, { flipDelta: number }>();
   const ownMatchIds = new Set<string>();
   for (const m of pending) {
     const [a, b] = getPair(m);
     if (a.id === targetId || b.id === targetId) {
       ownMatchIds.add(getMatchId(m));
       ownTally.set(getMatchId(m), { winTotal: 0, winQ: 0, loseTotal: 0, loseQ: 0 });
-    } else {
-      externalTally.set(getMatchId(m), { flipDelta: 0 });
     }
   }
 
@@ -148,7 +145,7 @@ function computeOdds<M>(input: EngineInput<M>): OddsResult {
     const target = standings.find((r) => r.entryId === targetId);
     const isQualified = target !== undefined && target.rank <= advanceCount;
     // Detect ambiguous tie at boundary
-    if (target) {
+    if (target && target.rank === advanceCount) {
       const atBoundary = standings.filter((r) => r.rank === advanceCount);
       if (atBoundary.length > 1) ambiguous += 1;
     }
