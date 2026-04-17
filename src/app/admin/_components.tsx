@@ -2379,15 +2379,40 @@ function TeamKoSubMatches({
   // Only save for player/score changes, not label/kind edits
   const SAVE_KEYS = new Set(["playersA", "playersB", "sets", "bestOf"]);
 
-  const updateSub = (subId: string, patch: Partial<SubMatchResolved>) => {
+  const applySubs = (updater: (prev: SubMatchResolved[]) => SubMatchResolved[]) => {
     setSubs((prev) => {
-      const next = prev.map((s) => (s.id === subId ? { ...s, ...patch } : s));
+      const next = updater(prev);
       subsRef.current = next;
       return next;
     });
+  };
+
+  const updateSub = (subId: string, patch: Partial<SubMatchResolved>) => {
+    applySubs((prev) => prev.map((s) => (s.id === subId ? { ...s, ...patch } : s)));
     if (Object.keys(patch).some((k) => SAVE_KEYS.has(k))) {
       scheduleSave();
     }
+  };
+
+  const addSub = () => {
+    applySubs((prev) => [
+      ...prev,
+      {
+        id: `${match.id}-${nanoid(6)}`,
+        label: `Đơn ${prev.length}`,
+        kind: "singles" as const,
+        playersA: [],
+        playersB: [],
+        bestOf: 3 as const,
+        sets: [],
+      },
+    ]);
+    scheduleSave();
+  };
+
+  const removeSub = (subId: string) => {
+    applySubs((prev) => prev.filter((s) => s.id !== subId));
+    scheduleSave();
   };
 
   return (
@@ -2407,12 +2432,21 @@ function TeamKoSubMatches({
             sub={sub}
             teamAPlayers={teamAPlayers}
             teamBPlayers={teamBPlayers}
-            canDelete={false}
+            canDelete={subs.length > 1}
             onChange={(patch: Partial<SubMatchResolved>) => updateSub(sub.id, patch)}
-            onDelete={() => {}}
+            onDelete={() => removeSub(sub.id)}
           />
         ))}
       </ul>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className="mt-2 w-full"
+        onClick={addSub}
+      >
+        <Plus /> Thêm lượt
+      </Button>
     </details>
   );
 }
