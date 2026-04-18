@@ -13,7 +13,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 import { fetchMatchIndexForKind } from "./_search-actions";
 import {
   filterAndSortMatches,
@@ -29,10 +29,10 @@ const STATUS_LABEL: Record<MatchIndexItem["status"], string> = {
 };
 
 const STATUS_CLASS: Record<MatchIndexItem["status"], string> = {
-  live: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400",
-  scheduled: "bg-muted text-foreground/80",
-  done: "bg-muted text-muted-foreground",
-  forfeit: "bg-muted text-muted-foreground",
+  live: "bg-red-500/15 text-red-600 dark:text-red-400 animate-pulse",
+  scheduled: "bg-muted text-muted-foreground",
+  done: "bg-green-500/15 text-green-700 dark:text-green-400",
+  forfeit: "bg-amber-500/15 text-amber-700 dark:text-amber-400",
 };
 
 export function SearchIconButton({ kind }: { kind: MatchKind }) {
@@ -188,12 +188,12 @@ function AdminSearchSheet({
           </p>
         )}
         {emptyReason === null && (
-          <ul className="flex flex-col gap-1">
+          <ul className="flex flex-col gap-2">
             {results.map((m) => (
               <li key={m.id}>
                 <button
                   type="button"
-                  className="flex w-full items-center justify-between gap-2 rounded-md border px-3 py-2 text-left hover:bg-muted"
+                  className="block w-full text-left"
                   onClick={() => {
                     router.push(
                       `/admin/${m.kind}/groups/${m.groupId}?match=${m.id}`,
@@ -201,20 +201,22 @@ function AdminSearchSheet({
                     onPick();
                   }}
                 >
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm font-medium">
-                      {m.sideA} <span className="text-muted-foreground">vs</span> {m.sideB}
+                  <Card className="p-3 transition-colors hover:bg-muted/40 active:bg-muted">
+                    <div className="mb-2 flex items-center justify-between gap-2 text-sm">
+                      <span className="truncate font-medium text-muted-foreground">
+                        {m.groupName}
+                      </span>
+                      <span
+                        className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-sm font-medium ${STATUS_CLASS[m.status]}`}
+                      >
+                        {STATUS_LABEL[m.status]}
+                      </span>
                     </div>
-                    <div className="mt-0.5 truncate text-xs text-muted-foreground">
-                      {m.groupName}
+                    <div className="space-y-0.5 text-sm">
+                      <div className="truncate">{m.sideA}</div>
+                      <div className="truncate">{m.sideB}</div>
                     </div>
-                  </div>
-                  <Badge
-                    variant="secondary"
-                    className={`shrink-0 ${STATUS_CLASS[m.status]}`}
-                  >
-                    {STATUS_LABEL[m.status]}
-                  </Badge>
+                  </Card>
                 </button>
               </li>
             ))}
