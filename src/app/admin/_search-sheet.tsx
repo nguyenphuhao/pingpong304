@@ -1,7 +1,7 @@
 // src/app/admin/_search-sheet.tsx
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import React, { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, RotateCcw, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -37,6 +37,7 @@ const STATUS_CLASS: Record<MatchIndexItem["status"], string> = {
 
 export function SearchIconButton({ kind }: { kind: MatchKind }) {
   const [open, setOpen] = useState(false);
+  const cache = useRef<Map<MatchKind, MatchIndexItem[]>>(new Map());
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
@@ -56,6 +57,7 @@ export function SearchIconButton({ kind }: { kind: MatchKind }) {
         <AdminSearchSheet
           kind={kind}
           onPick={() => setOpen(false)}
+          cache={cache}
         />
       </DialogContent>
     </Dialog>
@@ -65,16 +67,17 @@ export function SearchIconButton({ kind }: { kind: MatchKind }) {
 function AdminSearchSheet({
   kind,
   onPick,
+  cache,
 }: {
   kind: MatchKind;
   onPick: () => void;
+  cache: React.MutableRefObject<Map<MatchKind, MatchIndexItem[]>>;
 }) {
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [items, setItems] = useState<MatchIndexItem[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
-  const cache = useRef<Map<MatchKind, MatchIndexItem[]>>(new Map());
 
   const load = (forceRefresh = false) => {
     if (!forceRefresh) {

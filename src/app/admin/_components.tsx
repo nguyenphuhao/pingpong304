@@ -505,10 +505,10 @@ export function DoublesSchedule({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const clearedRef = useRef(false);
+  const lastConsumedMatchId = useRef<string | null>(null);
   useEffect(() => {
-    if (!autoOpenMatchId || clearedRef.current) return;
-    clearedRef.current = true;
+    if (!autoOpenMatchId || lastConsumedMatchId.current === autoOpenMatchId) return;
+    lastConsumedMatchId.current = autoOpenMatchId;
     const next = new URLSearchParams(searchParams?.toString() ?? "");
     next.delete("match");
     const qs = next.toString();
@@ -636,8 +636,10 @@ function DoublesMatchCard({
   const [match, setMatch] = useState<MatchResolved>(initialMatch);
   const [pending, setPending] = useState(false);
   const cardRef = useRef<HTMLDivElement | null>(null);
+  const consumedAutoOpen = useRef(false);
   useEffect(() => {
-    if (autoOpen) {
+    if (autoOpen && !consumedAutoOpen.current) {
+      consumedAutoOpen.current = true;
       cardRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
     }
   }, [autoOpen]);
@@ -781,10 +783,10 @@ export function TeamSchedule({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const clearedRef = useRef(false);
+  const lastConsumedMatchId = useRef<string | null>(null);
   useEffect(() => {
-    if (!autoOpenMatchId || clearedRef.current) return;
-    clearedRef.current = true;
+    if (!autoOpenMatchId || lastConsumedMatchId.current === autoOpenMatchId) return;
+    lastConsumedMatchId.current = autoOpenMatchId;
     const next = new URLSearchParams(searchParams?.toString() ?? "");
     next.delete("match");
     const qs = next.toString();
