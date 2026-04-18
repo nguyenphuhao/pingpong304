@@ -2,10 +2,11 @@ import { cookies } from "next/headers";
 
 export const SESSION_COOKIE = "pp_admin";
 const SESSION_VALUE = "ok";
-const ADMIN_PASSWORD = "123456";
 
 export function verifyPassword(input: string) {
-  return input === ADMIN_PASSWORD;
+  const expected = process.env.ADMIN_PASSWORD;
+  if (!expected) throw new Error("ADMIN_PASSWORD env var is not set");
+  return input === expected;
 }
 
 export async function isAdmin() {
