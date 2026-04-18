@@ -17,13 +17,13 @@ describe("buildDoublesBracket", () => {
     expect(buildDoublesBracket(seeds, ["A", "B", "C", "D"])).toHaveLength(7);
   });
 
-  test("QF cross-group: A1 vs D2, C1 vs B2, B1 vs C2, D1 vs A2", () => {
+  test("QF cross-group: A1 vs C2, C1 vs A2, B1 vs D2, D1 vs B2", () => {
     const qf = buildDoublesBracket(seeds, ["A", "B", "C", "D"]).filter((m) => m.round === "qf");
     expect(qf).toHaveLength(4);
-    expect(qf[0]).toMatchObject({ entry_a: "a1", entry_b: "d2" });
-    expect(qf[1]).toMatchObject({ entry_a: "c1", entry_b: "b2" });
-    expect(qf[2]).toMatchObject({ entry_a: "b1", entry_b: "c2" });
-    expect(qf[3]).toMatchObject({ entry_a: "d1", entry_b: "a2" });
+    expect(qf[0]).toMatchObject({ entry_a: "a1", entry_b: "c2" });
+    expect(qf[1]).toMatchObject({ entry_a: "c1", entry_b: "a2" });
+    expect(qf[2]).toMatchObject({ entry_a: "b1", entry_b: "d2" });
+    expect(qf[3]).toMatchObject({ entry_a: "d1", entry_b: "b2" });
   });
 
   test("SF and F have null entries", () => {
@@ -38,10 +38,10 @@ describe("buildDoublesBracket", () => {
     const byId = new Map(buildDoublesBracket(seeds, ["A", "B", "C", "D"]).map((m) => [m.id, m]));
     expect(byId.get("dko-qf1")!.next_match_id).toBe("dko-sf1");
     expect(byId.get("dko-qf1")!.next_slot).toBe("a");
-    expect(byId.get("dko-qf2")!.next_match_id).toBe("dko-sf1");
-    expect(byId.get("dko-qf2")!.next_slot).toBe("b");
-    expect(byId.get("dko-qf3")!.next_match_id).toBe("dko-sf2");
-    expect(byId.get("dko-qf3")!.next_slot).toBe("a");
+    expect(byId.get("dko-qf2")!.next_match_id).toBe("dko-sf2");
+    expect(byId.get("dko-qf2")!.next_slot).toBe("a");
+    expect(byId.get("dko-qf3")!.next_match_id).toBe("dko-sf1");
+    expect(byId.get("dko-qf3")!.next_slot).toBe("b");
     expect(byId.get("dko-qf4")!.next_match_id).toBe("dko-sf2");
     expect(byId.get("dko-qf4")!.next_slot).toBe("b");
     expect(byId.get("dko-sf1")!.next_match_id).toBe("dko-f");
@@ -51,8 +51,8 @@ describe("buildDoublesBracket", () => {
 
   test("labels are correct", () => {
     const byId = new Map(buildDoublesBracket(seeds, ["A", "B", "C", "D"]).map((m) => [m.id, m]));
-    expect(byId.get("dko-qf1")!.label_a).toBe("Nhất bảng A");
-    expect(byId.get("dko-qf1")!.label_b).toBe("Nhì bảng D");
+    expect(byId.get("dko-qf1")!.label_a).toBe("Nhất A");
+    expect(byId.get("dko-qf1")!.label_b).toBe("Nhì C");
     expect(byId.get("dko-sf1")!.label_a).toBe("Thắng TK 1");
     expect(byId.get("dko-f")!.label_a).toBe("Thắng BK 1");
   });

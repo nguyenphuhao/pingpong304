@@ -16,10 +16,9 @@ export default async function PublicDoublesGroupPage({
   const group = await fetchDoublesGroupById(id);
   if (!group) notFound();
 
-  const entries = group.entries.map((e) => e.label);
   const [matches, standings] = await Promise.all([
     fetchDoublesMatchesByGroup(id),
-    fetchGroupStandings("doubles", id, entries),
+    fetchGroupStandings("doubles", id, group.entries),
   ]);
 
   return (

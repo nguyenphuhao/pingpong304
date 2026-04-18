@@ -40,33 +40,38 @@ function findEntry(seeds: SeedEntry[], group: string, rank: number): string | nu
   return seeds.find((s) => s.groupName === group && s.rank === rank)?.entryId ?? null;
 }
 
+function shortName(name: string): string {
+  return name.replace(/^Bảng\s*/i, "");
+}
+
 export function buildDoublesBracket(seeds: SeedEntry[], groupNames: string[]): DoublesKoInsert[] {
   const groups = [...groupNames].sort();
   const [A, B, C, D] = groups;
+  const [sA, sB, sC, sD] = [A, B, C, D].map(shortName);
 
   return [
     {
       id: "dko-qf1", round: "qf", best_of: 5,
-      label_a: `Nhất bảng ${A}`, label_b: `Nhì bảng ${D}`,
-      entry_a: findEntry(seeds, A, 1), entry_b: findEntry(seeds, D, 2),
+      label_a: `Nhất ${sA}`, label_b: `Nhì ${sC}`,
+      entry_a: findEntry(seeds, A, 1), entry_b: findEntry(seeds, C, 2),
       next_match_id: "dko-sf1", next_slot: "a",
     },
     {
       id: "dko-qf2", round: "qf", best_of: 5,
-      label_a: `Nhất bảng ${C}`, label_b: `Nhì bảng ${B}`,
-      entry_a: findEntry(seeds, C, 1), entry_b: findEntry(seeds, B, 2),
-      next_match_id: "dko-sf1", next_slot: "b",
-    },
-    {
-      id: "dko-qf3", round: "qf", best_of: 5,
-      label_a: `Nhất bảng ${B}`, label_b: `Nhì bảng ${C}`,
-      entry_a: findEntry(seeds, B, 1), entry_b: findEntry(seeds, C, 2),
+      label_a: `Nhất ${sC}`, label_b: `Nhì ${sA}`,
+      entry_a: findEntry(seeds, C, 1), entry_b: findEntry(seeds, A, 2),
       next_match_id: "dko-sf2", next_slot: "a",
     },
     {
+      id: "dko-qf3", round: "qf", best_of: 5,
+      label_a: `Nhất ${sB}`, label_b: `Nhì ${sD}`,
+      entry_a: findEntry(seeds, B, 1), entry_b: findEntry(seeds, D, 2),
+      next_match_id: "dko-sf1", next_slot: "b",
+    },
+    {
       id: "dko-qf4", round: "qf", best_of: 5,
-      label_a: `Nhất bảng ${D}`, label_b: `Nhì bảng ${A}`,
-      entry_a: findEntry(seeds, D, 1), entry_b: findEntry(seeds, A, 2),
+      label_a: `Nhất ${sD}`, label_b: `Nhì ${sB}`,
+      entry_a: findEntry(seeds, D, 1), entry_b: findEntry(seeds, B, 2),
       next_match_id: "dko-sf2", next_slot: "b",
     },
     {
@@ -101,18 +106,19 @@ function teamSubMatches(matchId: string): TeamKoInsert["individual"] {
 export function buildTeamBracket(seeds: SeedEntry[], groupNames: string[]): TeamKoInsert[] {
   const groups = [...groupNames].sort();
   const [A, B] = groups;
+  const [sA, sB] = [A, B].map(shortName);
 
   return [
     {
       id: "tko-sf1", round: "sf",
-      label_a: `Nhất bảng ${A}`, label_b: `Nhì bảng ${B}`,
+      label_a: `Nhất ${sA}`, label_b: `Nhì ${sB}`,
       entry_a: findEntry(seeds, A, 1), entry_b: findEntry(seeds, B, 2),
       next_match_id: "tko-f", next_slot: "a",
       individual: teamSubMatches("tko-sf1"),
     },
     {
       id: "tko-sf2", round: "sf",
-      label_a: `Nhất bảng ${B}`, label_b: `Nhì bảng ${A}`,
+      label_a: `Nhất ${sB}`, label_b: `Nhì ${sA}`,
       entry_a: findEntry(seeds, B, 1), entry_b: findEntry(seeds, A, 2),
       next_match_id: "tko-f", next_slot: "b",
       individual: teamSubMatches("tko-sf2"),

@@ -16,10 +16,9 @@ export default async function PublicTeamGroupPage({
   const group = await fetchTeamGroupById(id);
   if (!group) notFound();
 
-  const entries = group.entries.map((e) => e.label);
   const [matches, standings] = await Promise.all([
     fetchTeamMatchesByGroup(id),
-    fetchGroupStandings("teams", id, entries),
+    fetchGroupStandings("teams", id, group.entries),
   ]);
 
   return (

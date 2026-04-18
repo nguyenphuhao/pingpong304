@@ -66,6 +66,7 @@ import { deriveTeamScore, deriveTeamWinner } from "@/lib/matches/derive";
 import { toast } from "sonner";
 import { nanoid } from "nanoid";
 import { PlayerPicker } from "./_player-picker";
+import { KoEntryPicker } from "./_ko-entry-picker";
 import { computeDoublesStandings, computeTeamStandings } from "@/lib/standings/compute";
 import type { StandingRow } from "@/lib/standings/types";
 import { groupColor } from "../_groupColors";
@@ -142,7 +143,7 @@ export function ContentWorkspace({
         <GroupsSection kind={kind} groups={groups} pairs={pairs} teams={teams} />
       </TabsContent>
       <TabsContent value="ko" className="mt-4">
-        <KnockoutSection kind={kind} matches={knockout} teams={teams} />
+        <KnockoutSection kind={kind} matches={knockout} pairs={pairs} teams={teams} />
       </TabsContent>
     </Tabs>
   );
@@ -2482,10 +2483,12 @@ async function patchKoMatch(kind: Content, id: string, body: Record<string, unkn
 function KnockoutSection({
   kind,
   matches,
+  pairs,
   teams,
 }: {
   kind: Content;
   matches: KoMatch[];
+  pairs?: PairWithNames[];
   teams?: TeamWithNames[];
 }) {
   const router = useRouter();
@@ -2574,7 +2577,15 @@ function KnockoutSection({
                 </div>
                 <div className="flex flex-col gap-2">
                   {list.map((m, i) => (
-                    <KoMatchCard key={m.id} match={m} index={i + 1} kind={kind} teams={teams} />
+                    <KoMatchCard
+                      key={m.id}
+                      match={m}
+                      index={i + 1}
+                      kind={kind}
+                      pairs={pairs}
+                      teams={teams}
+                      allMatches={matches}
+                    />
                   ))}
                 </div>
               </div>
@@ -2661,12 +2672,16 @@ function KoMatchCard({
   match,
   index,
   kind,
+  pairs,
   teams,
+  allMatches,
 }: {
   match: KoMatch;
   index: number;
   kind: Content;
+  pairs?: PairWithNames[];
   teams?: TeamWithNames[];
+  allMatches?: KoMatch[];
 }) {
   const router = useRouter();
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
@@ -2689,6 +2704,29 @@ function KoMatchCard({
   const bWon = done && scoreB > scoreA;
   const accent = ROUND_STYLE[match.round].accent;
   const bestOf = isDoubles ? match.bestOf : 0;
+
+  const isFirstRound = isDoubles ? match.round === "qf" : match.round === "sf";
+  const canEditSlots = isFirstRound && match.status === "scheduled";
+
+  const entryOptions: { id: string; label: string }[] = isDoubles
+    ? (pairs ?? []).map((p) => ({ id: p.id, label: `${p.p1.name} – ${p.p2.name}` }))
+    : (teams ?? []).map((t) => ({ id: t.id, label: t.name }));
+
+  const currentEntryA = isDoubles
+    ? (match.entryA?.id ?? null)
+    : ((match as TeamKoResolved).entryA?.id ?? null);
+  const currentEntryB = isDoubles
+    ? (match.entryB?.id ?? null)
+    : ((match as TeamKoResolved).entryB?.id ?? null);
+
+  const usedElsewhere = new Set<string>();
+  for (const m of allMatches ?? []) {
+    if (m.id === match.id) continue;
+    const ea = isDoublesKo(m) ? m.entryA?.id : (m as TeamKoResolved).entryA?.id;
+    const eb = isDoublesKo(m) ? m.entryB?.id : (m as TeamKoResolved).entryB?.id;
+    if (ea) usedElsewhere.add(ea);
+    if (eb) usedElsewhere.add(eb);
+  }
 
   const save = async (body: Record<string, unknown>) => {
     setSaveState("saving");
@@ -2727,11 +2765,33 @@ function KoMatchCard({
 
       <div className="flex items-center gap-3">
         <div className="min-w-0 flex-1 space-y-0.5 text-sm">
-          <div className={`truncate ${aWon ? "font-semibold" : ""} ${placeholderA ? "italic text-muted-foreground" : ""}`}>
-            {nameA}
+          <div className="flex items-center gap-1">
+            <span className={`min-w-0 flex-1 truncate ${aWon ? "font-semibold" : ""} ${placeholderA ? "italic text-muted-foreground" : ""}`}>
+              {nameA}
+            </span>
+            {canEditSlots && (
+              <KoEntryPicker
+                options={entryOptions}
+                currentId={currentEntryA}
+                slotLabel={match.labelA}
+                usedElsewhere={usedElsewhere}
+                onPick={(id) => save({ entryA: id })}
+              />
+            )}
           </div>
-          <div className={`truncate ${bWon ? "font-semibold" : ""} ${placeholderB ? "italic text-muted-foreground" : ""}`}>
-            {nameB}
+          <div className="flex items-center gap-1">
+            <span className={`min-w-0 flex-1 truncate ${bWon ? "font-semibold" : ""} ${placeholderB ? "italic text-muted-foreground" : ""}`}>
+              {nameB}
+            </span>
+            {canEditSlots && (
+              <KoEntryPicker
+                options={entryOptions}
+                currentId={currentEntryB}
+                slotLabel={match.labelB}
+                usedElsewhere={usedElsewhere}
+                onPick={(id) => save({ entryB: id })}
+              />
+            )}
           </div>
         </div>
         <div className="flex shrink-0 flex-col items-end text-xl font-semibold tabular-nums leading-tight">

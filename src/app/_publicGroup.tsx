@@ -103,8 +103,10 @@ function GroupTabContent({
 }) {
   const c = groupColor(group.id);
   const played = standings.some((s) => s.played > 0);
-  const top1 = standings[0];
-  const top2 = standings[1];
+  const atRank1 = standings.filter((s) => s.rank === 1);
+  const atRank2 = standings.filter((s) => s.rank === 2);
+  const top1 = atRank1.length === 1 ? atRank1[0] : undefined;
+  const top2 = atRank2.length === 1 ? atRank2[0] : undefined;
 
   return (
     <div className={`flex flex-col gap-3 rounded-xl border p-3 ${c.border} ${c.bg}`}>
@@ -228,13 +230,13 @@ function StandingsDialog({
           </DialogDescription>
         </DialogHeader>
         <ol className="flex flex-col gap-2">
-          {standings.map((r, i) => (
+          {standings.map((r) => (
             <li
-              key={r.entry}
+              key={r.entryId}
               className="flex items-center gap-3 rounded-lg border p-3"
             >
               <span className="inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-medium">
-                {i + 1}
+                {r.rank}
               </span>
               <div className="min-w-0 flex-1">
                 <div className="font-medium">{r.entry}</div>

@@ -32,7 +32,7 @@
 - Bốc thăm ghép cặp ngẫu nhiên
 - Mỗi cặp gồm 1 VĐV trình cao + 1 VĐV trình thấp
 - Nhất và nhì mỗi bảng (8 cặp) vào Knockout
-- Thể thức KO: Tứ kết (bestOf 3) → Bán kết (bestOf 5) → Chung kết (bestOf 5)
+- Thể thức KO: Tứ kết, Bán kết, Chung kết đều bestOf 5 (5 ván thắng 3)
 
 ### 2.2 Nội dung Đồng đội
 
@@ -58,7 +58,13 @@
 
 ## 5. Vòng knockout
 
-- Seeding: Nhất bảng A vs Nhì bảng D, v.v. (seed chéo)
+- Seeding Đôi (seed chéo theo cặp bảng A↔C, B↔D):
+  - TK1: Nhất A – Nhì C
+  - TK2: Nhất C – Nhì A
+  - TK3: Nhất B – Nhì D
+  - TK4: Nhất D – Nhì B
+  - BK I: Thắng TK1 – Thắng TK3
+  - BK II: Thắng TK2 – Thắng TK4
 - Thua một trận là bị loại
 - Hai đội/cặp thua bán kết đồng hạng Ba (không đánh trận tranh hạng 3)
 

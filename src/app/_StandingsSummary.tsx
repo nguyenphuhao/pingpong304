@@ -40,22 +40,22 @@ export function StandingsSummary({
                 </span>
               </div>
               <div className="space-y-1">
-                {rows.map((r, ri) => (
+                {rows.map((r) => (
                   <div
-                    key={r.entry}
+                    key={r.entryId}
                     className="rounded-lg bg-background/60 px-2.5 py-2 text-sm"
                   >
                     <div className="flex items-start gap-2">
                       <span
                         className={`mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
-                          played && ri === 0
+                          played && r.rank === 1
                             ? "bg-yellow-500/20 text-yellow-600 dark:text-yellow-400"
-                            : played && ri === 1
+                            : played && r.rank === 2
                               ? "bg-gray-300/30 text-gray-500 dark:text-gray-400"
                               : "bg-muted text-muted-foreground"
                         }`}
                       >
-                        {ri + 1}
+                        {r.rank}
                       </span>
                       <span className="min-w-0 flex-1 leading-snug">{r.entry}</span>
                     </div>
@@ -164,16 +164,16 @@ function ExplainButton({
     setLoading(true);
     setOpen(true);
     try {
-      const apiRows = rows.map((r, i) => ({
+      const apiRows = rows.map((r) => ({
         entry: r.entry,
         played: r.played,
         won: r.won,
         lost: r.lost,
         diff: r.diff,
-        setsWon: 0,
-        setsLost: 0,
+        setsWon: r.setsWon,
+        setsLost: r.setsLost,
         points: r.points,
-        rank: i + 1,
+        rank: r.rank,
       }));
       const res = await fetch("/api/ai/explain-standings", {
         method: "POST",

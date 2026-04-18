@@ -31,13 +31,16 @@ export async function POST() {
         group.entries.map((e) => ({ id: e.id, label: e.label })),
         matches,
       );
-      const sorted = standings.filter((s) => s.played > 0).sort((a, b) => a.rank - b.rank);
-      for (let i = 0; i < Math.min(2, sorted.length); i++) {
-        seeds.push({
-          groupName: group.name,
-          rank: i + 1,
-          entryId: sorted[i].entryId,
-        });
+      const played = standings.filter((s) => s.played > 0);
+      for (const rank of [1, 2]) {
+        const atRank = played.filter((s) => s.rank === rank);
+        if (atRank.length === 1) {
+          seeds.push({
+            groupName: group.name,
+            rank,
+            entryId: atRank[0].entryId,
+          });
+        }
       }
     }
 
