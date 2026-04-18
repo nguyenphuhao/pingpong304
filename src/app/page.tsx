@@ -13,53 +13,57 @@ import {
   Users2,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 
 export default function Home() {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col gap-5 p-4">
       {/* HERO */}
       <Card className="border-emerald-500/40 bg-emerald-500/10 p-6">
-        <div className="mb-4 flex items-center justify-between gap-2">
-          <p className="text-xs font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
-            CLB Bóng Bàn Bình Tân
-          </p>
-          <div className="flex items-center gap-2">
-            <Badge variant="secondary">Sắp diễn ra</Badge>
-            <Link
-              href="/admin/login"
-              aria-label="Ban Tổ Chức"
-              title="Ban Tổ Chức"
-              className="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
-            >
-              <KeyRound className="size-4" />
-            </Link>
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
+              CLB Bóng Bàn Bình Tân
+            </p>
+            <h1 className="mt-2 text-base font-medium text-muted-foreground">
+              Giải bóng bàn chào mừng
+            </h1>
+            <p className="mt-1 text-xl font-semibold leading-snug text-emerald-700 dark:text-emerald-400">
+              Kỷ niệm 51 năm ngày thống nhất đất nước
+            </p>
+            <p className="mt-2 text-sm text-muted-foreground">30/4/1975 – 30/4/2026</p>
           </div>
+          <Link
+            href="/admin/login"
+            aria-label="Ban Tổ Chức"
+            title="Ban Tổ Chức"
+            className="inline-flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+          >
+            <KeyRound className="size-4" />
+          </Link>
         </div>
 
-        <h1 className="text-base font-medium text-muted-foreground">
-          Giải bóng bàn chào mừng
-        </h1>
-        <p className="mt-2 text-2xl font-semibold leading-snug text-emerald-700 dark:text-emerald-400">
-          Kỷ niệm 51 năm
-          <br />
-          ngày thống nhất đất nước
-        </p>
-        <p className="mt-2 text-sm text-muted-foreground">30/4/1975 – 30/4/2026</p>
-
-        <div className="mt-5 space-y-3 border-t border-emerald-500/20 pt-4 text-sm">
-          <div className="flex items-center gap-3">
-            <CalendarDays className="size-4 shrink-0 text-emerald-700 dark:text-emerald-400" />
-            <span>Chủ nhật, 19/04/2026</span>
-          </div>
-          <div className="flex items-start gap-3">
-            <MapPin className="mt-0.5 size-4 shrink-0 text-emerald-700 dark:text-emerald-400" />
-            <span className="leading-relaxed">
-              TT CUDV Công Phường An Lạc
-              <br />
-              <span className="text-muted-foreground">565 Kinh Dương Vương</span>
-            </span>
-          </div>
+        <div className="mt-5 flex flex-col gap-3">
+          <HeroInfoRow
+            icon={<CalendarDays className="size-4 text-emerald-700 dark:text-emerald-400" />}
+            label="Ngày"
+            value="Chủ nhật · 19/04/2026"
+          />
+          <HeroInfoRow
+            icon={<Clock className="size-4 text-emerald-700 dark:text-emerald-400" />}
+            label="Giờ"
+            value="Điểm danh 7:00 sáng"
+          />
+          <HeroInfoRow
+            icon={<MapPin className="size-4 text-emerald-700 dark:text-emerald-400" />}
+            label="Địa điểm"
+            value={
+              <>
+                TT CUDV Công Phường An Lạc
+                <br />
+                <span className="text-muted-foreground">565 Kinh Dương Vương</span>
+              </>
+            }
+          />
         </div>
       </Card>
 
@@ -304,5 +308,29 @@ function PrizeRow({
       </div>
       <div className="shrink-0 font-semibold tabular-nums">{money}</div>
     </Card>
+  );
+}
+
+function HeroInfoRow({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-start gap-3">
+      <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500/15">
+        {icon}
+      </div>
+      <div className="min-w-0 flex-1 pt-0.5">
+        <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          {label}
+        </div>
+        <div className="text-sm font-medium leading-snug">{value}</div>
+      </div>
+    </div>
   );
 }
