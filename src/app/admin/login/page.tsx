@@ -26,7 +26,6 @@ export default function LoginPage() {
                 name="password"
                 type="password"
                 autoComplete="current-password"
-                inputMode="numeric"
                 required
                 className="h-11"
               />
