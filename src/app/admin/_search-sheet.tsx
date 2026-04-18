@@ -104,13 +104,12 @@ function AdminSearchSheet({
   }, [kind]);
 
   const results = items ? filterAndSortMatches(items, query) : [];
-  const emptyState = renderEmptyState({
+  const emptyReason = deriveEmptyReason({
     loading: isPending || items === null,
     error,
     itemsExists: items !== null && items.length > 0,
     resultsLen: results.length,
     query,
-    onRetry: () => load(true),
   });
 
   return (
@@ -157,8 +156,35 @@ function AdminSearchSheet({
       </DialogHeader>
 
       <div className="flex-1 overflow-y-auto p-2">
-        {emptyState}
-        {!emptyState && (
+        {emptyReason === "loading" && (
+          <p className="flex items-center justify-center gap-2 py-10 text-sm text-muted-foreground">
+            <Loader2 className="size-4 animate-spin" /> Đang tải…
+          </p>
+        )}
+        {emptyReason === "error" && (
+          <div className="flex flex-col items-center gap-2 py-10 text-sm">
+            <p className="text-muted-foreground">{error}</p>
+            <Button type="button" size="sm" variant="outline" onClick={() => load(true)}>
+              Thử lại
+            </Button>
+          </div>
+        )}
+        {emptyReason === "no-items" && (
+          <p className="py-10 text-center text-sm text-muted-foreground">
+            Chưa có trận. Tạo bảng trước ở tab Bảng.
+          </p>
+        )}
+        {emptyReason === "no-live" && (
+          <p className="py-10 text-center text-sm text-muted-foreground">
+            Chưa có trận đang đá. Gõ để tìm.
+          </p>
+        )}
+        {emptyReason === "no-match" && (
+          <p className="py-10 text-center text-sm text-muted-foreground">
+            Không tìm thấy trận nào.
+          </p>
+        )}
+        {emptyReason === null && (
           <ul className="flex flex-col gap-1">
             {results.map((m) => (
               <li key={m.id}>
@@ -191,63 +217,25 @@ function AdminSearchSheet({
             ))}
           </ul>
         )}
+
       </div>
     </div>
   );
 }
 
-function renderEmptyState({
-  loading,
-  error,
-  itemsExists,
-  resultsLen,
-  query,
-  onRetry,
-}: {
+type EmptyReason = "loading" | "error" | "no-items" | "no-live" | "no-match" | null;
+
+function deriveEmptyReason(args: {
   loading: boolean;
   error: string | null;
   itemsExists: boolean;
   resultsLen: number;
   query: string;
-  onRetry: () => void;
-}): React.ReactNode | null {
-  if (loading) {
-    return (
-      <p className="flex items-center justify-center gap-2 py-10 text-sm text-muted-foreground">
-        <Loader2 className="size-4 animate-spin" /> Đang tải…
-      </p>
-    );
-  }
-  if (error) {
-    return (
-      <div className="flex flex-col items-center gap-2 py-10 text-sm">
-        <p className="text-muted-foreground">{error}</p>
-        <Button type="button" size="sm" variant="outline" onClick={onRetry}>
-          Thử lại
-        </Button>
-      </div>
-    );
-  }
-  if (!itemsExists) {
-    return (
-      <p className="py-10 text-center text-sm text-muted-foreground">
-        Chưa có trận. Tạo bảng trước ở tab Bảng.
-      </p>
-    );
-  }
-  if (resultsLen === 0 && query.trim() === "") {
-    return (
-      <p className="py-10 text-center text-sm text-muted-foreground">
-        Chưa có trận đang đá. Gõ để tìm.
-      </p>
-    );
-  }
-  if (resultsLen === 0) {
-    return (
-      <p className="py-10 text-center text-sm text-muted-foreground">
-        Không tìm thấy trận nào.
-      </p>
-    );
-  }
+}): EmptyReason {
+  if (args.loading) return "loading";
+  if (args.error) return "error";
+  if (!args.itemsExists) return "no-items";
+  if (args.resultsLen === 0 && args.query.trim() === "") return "no-live";
+  if (args.resultsLen === 0) return "no-match";
   return null;
 }
