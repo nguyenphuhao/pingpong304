@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ContentWorkspace } from "../_components";
+import { SearchIconButton } from "../_search-sheet";
 import { fetchDoublesKo } from "@/lib/db/knockout";
 import { supabaseServer } from "@/lib/supabase/server";
 import { fetchPairs } from "@/lib/db/pairs";
@@ -48,10 +49,11 @@ export default async function DoublesAdminPage() {
             >
               <ArrowLeft />
             </Button>
-            <div>
+            <div className="flex-1">
               <h1 className="text-xl font-semibold">Nội dung Đôi</h1>
               <p className="text-sm text-muted-foreground">VĐV, cặp đôi và bảng đấu</p>
             </div>
+            <SearchIconButton kind="doubles" />
           </header>
         }
         players={players}

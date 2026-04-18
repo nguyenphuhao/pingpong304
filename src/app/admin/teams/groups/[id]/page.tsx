@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TeamSchedule } from "../../../_components";
 import { GroupRegenerateButton } from "../../../_group-regenerate-button";
+import { SearchIconButton } from "../../../_search-sheet";
 import { fetchTeamGroupById } from "@/lib/db/groups";
 import { fetchTeamMatchesByGroup } from "@/lib/db/matches";
 import { fetchTeams } from "@/lib/db/teams";
@@ -12,10 +13,15 @@ export const dynamic = "force-dynamic";
 
 export default async function TeamGroupDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ match?: string }>;
 }) {
-  const { id } = await params;
+  const [{ id }, { match: autoOpenMatchId }] = await Promise.all([
+    params,
+    searchParams,
+  ]);
   const [group, matches, allTeams] = await Promise.all([
     fetchTeamGroupById(id),
     fetchTeamMatchesByGroup(id),
@@ -42,6 +48,7 @@ export default async function TeamGroupDetailPage({
           <h1 className="text-xl font-semibold">{group.name}</h1>
           <p className="text-sm text-muted-foreground">Nội dung Đồng đội · vòng bảng</p>
         </div>
+        <SearchIconButton kind="teams" />
         <GroupRegenerateButton
           kind="teams"
           groupId={group.id}
@@ -55,6 +62,7 @@ export default async function TeamGroupDetailPage({
         entries={group.entries}
         matches={matches}
         teamPlayersByTeamId={teamPlayersByTeamId}
+        autoOpenMatchId={autoOpenMatchId}
       />
     </main>
   );

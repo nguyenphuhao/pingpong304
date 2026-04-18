@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DoublesSchedule } from "../../../_components";
 import { GroupRegenerateButton } from "../../../_group-regenerate-button";
+import { SearchIconButton } from "../../../_search-sheet";
 import { fetchDoublesGroupById } from "@/lib/db/groups";
 import { fetchDoublesMatchesByGroup } from "@/lib/db/matches";
 
@@ -11,10 +12,15 @@ export const dynamic = "force-dynamic";
 
 export default async function DoublesGroupDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ match?: string }>;
 }) {
-  const { id } = await params;
+  const [{ id }, { match: autoOpenMatchId }] = await Promise.all([
+    params,
+    searchParams,
+  ]);
   const [group, matches] = await Promise.all([
     fetchDoublesGroupById(id),
     fetchDoublesMatchesByGroup(id),
@@ -37,6 +43,7 @@ export default async function DoublesGroupDetailPage({
           <h1 className="text-xl font-semibold">{group.name}</h1>
           <p className="text-sm text-muted-foreground">Nội dung Đôi · vòng bảng</p>
         </div>
+        <SearchIconButton kind="doubles" />
         <GroupRegenerateButton
           kind="doubles"
           groupId={group.id}
@@ -49,6 +56,7 @@ export default async function DoublesGroupDetailPage({
         groupName={group.name}
         entries={group.entries}
         matches={matches}
+        autoOpenMatchId={autoOpenMatchId}
       />
     </main>
   );

@@ -486,12 +486,14 @@ export function DoublesSchedule({
   entries,
   matches: initialMatches,
   readOnly,
+  autoOpenMatchId,
 }: {
   groupId: string;
   groupName: string;
   entries: { id: string; label: string }[];
   matches: MatchResolved[];
   readOnly?: boolean;
+  autoOpenMatchId?: string;
 }) {
   const [matches, setMatches] = useState(initialMatches);
   const handleMatchUpdated = (updated: MatchResolved) => {
@@ -500,6 +502,18 @@ export function DoublesSchedule({
   };
   const standings = computeDoublesStandings(entries, matches);
   const color = groupColor(groupId);
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const lastConsumedMatchId = useRef<string | null>(null);
+  useEffect(() => {
+    if (!autoOpenMatchId || lastConsumedMatchId.current === autoOpenMatchId) return;
+    lastConsumedMatchId.current = autoOpenMatchId;
+    const next = new URLSearchParams(searchParams?.toString() ?? "");
+    next.delete("match");
+    const qs = next.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  }, [autoOpenMatchId, pathname, searchParams, router]);
   return (
     <div className="flex flex-col gap-4">
       <Card className={`p-4 ${color.border} ${color.bg}`}>
@@ -544,6 +558,7 @@ export function DoublesSchedule({
             index={i}
             readOnly={readOnly}
             onMatchUpdated={handleMatchUpdated}
+            autoOpen={m.id === autoOpenMatchId}
           />
         )}
       />
@@ -610,14 +625,24 @@ function DoublesMatchCard({
   index,
   readOnly,
   onMatchUpdated,
+  autoOpen,
 }: {
   match: MatchResolved;
   index: number;
   readOnly?: boolean;
   onMatchUpdated?: (m: MatchResolved) => void;
+  autoOpen?: boolean;
 }) {
   const [match, setMatch] = useState<MatchResolved>(initialMatch);
   const [pending, setPending] = useState(false);
+  const cardRef = useRef<HTMLDivElement | null>(null);
+  const consumedAutoOpen = useRef(false);
+  useEffect(() => {
+    if (autoOpen && !consumedAutoOpen.current) {
+      consumedAutoOpen.current = true;
+      cardRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+    }
+  }, [autoOpen]);
   const status = match.status;
   const locked = status === "done" || status === "forfeit";
   const live = status === "live";
@@ -653,6 +678,7 @@ function DoublesMatchCard({
   };
 
   return (
+    <div ref={cardRef}>
     <Card className={`p-3 ${locked ? "border-green-500/30 bg-green-500/5" : ""}`}>
       <div className="mb-2 flex items-center justify-between text-sm text-muted-foreground">
         <div className="flex items-center gap-2">
@@ -687,6 +713,7 @@ function DoublesMatchCard({
               match={match}
               disabled={pending}
               onSave={save}
+              autoOpen={autoOpen}
             />
             <AiSingleMatchButton
               matchContext={{
@@ -725,6 +752,7 @@ function DoublesMatchCard({
         )}
       </div>
     </Card>
+    </div>
   );
 }
 
@@ -735,6 +763,7 @@ export function TeamSchedule({
   matches: initialMatches,
   teamPlayersByTeamId = {},
   readOnly,
+  autoOpenMatchId,
 }: {
   groupId: string;
   groupName: string;
@@ -742,6 +771,7 @@ export function TeamSchedule({
   matches: TeamMatchResolved[];
   teamPlayersByTeamId?: Record<string, Array<{ id: string; name: string }>>;
   readOnly?: boolean;
+  autoOpenMatchId?: string;
 }) {
   const [matches, setMatches] = useState(initialMatches);
   const handleMatchUpdated = (updated: TeamMatchResolved) => {
@@ -750,6 +780,18 @@ export function TeamSchedule({
   };
   const standings = computeTeamStandings(entries, matches);
   const color = groupColor(groupId);
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const lastConsumedMatchId = useRef<string | null>(null);
+  useEffect(() => {
+    if (!autoOpenMatchId || lastConsumedMatchId.current === autoOpenMatchId) return;
+    lastConsumedMatchId.current = autoOpenMatchId;
+    const next = new URLSearchParams(searchParams?.toString() ?? "");
+    next.delete("match");
+    const qs = next.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  }, [autoOpenMatchId, pathname, searchParams, router]);
   return (
     <div className="flex flex-col gap-4">
       <Card className={`p-4 ${color.border} ${color.bg}`}>
@@ -806,6 +848,7 @@ export function TeamSchedule({
             teamAPlayers={teamPlayersByTeamId[m.teamA.id] ?? []}
             teamBPlayers={teamPlayersByTeamId[m.teamB.id] ?? []}
             onMatchUpdated={handleMatchUpdated}
+            autoOpen={m.id === autoOpenMatchId}
           />
         )}
       />
@@ -862,6 +905,7 @@ function TeamMatchCard({
   teamAPlayers,
   teamBPlayers,
   onMatchUpdated,
+  autoOpen,
 }: {
   match: TeamMatchResolved;
   index: number;
@@ -869,6 +913,7 @@ function TeamMatchCard({
   teamAPlayers: Array<{ id: string; name: string }>;
   teamBPlayers: Array<{ id: string; name: string }>;
   onMatchUpdated?: (m: TeamMatchResolved) => void;
+  autoOpen?: boolean;
 }) {
   const [match, setMatch] = useState<TeamMatchResolved>(initialMatch);
   const [subs, setSubs] = useState<SubMatchResolved[]>(initialMatch.individual);
@@ -883,6 +928,14 @@ function TeamMatchCard({
   const inFlight = useRef(false);
   const changedSinceInFlight = useRef(false);
   const savedIndicatorTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cardRef = useRef<HTMLDivElement | null>(null);
+  const consumedAutoOpen = useRef(false);
+  useEffect(() => {
+    if (autoOpen && !consumedAutoOpen.current) {
+      consumedAutoOpen.current = true;
+      cardRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+    }
+  }, [autoOpen]);
 
   // Refs mirror latest state so the debounced save reads fresh values
   // (not the captured values from the render where scheduleSave was called).
@@ -1137,6 +1190,7 @@ function TeamMatchCard({
   const locked = status === "done" || status === "forfeit";
 
   return (
+    <div ref={cardRef}>
     <Card className={`p-3 ${locked ? "border-green-500/30 bg-green-500/5" : ""}`}>
       <div className="mb-2 flex items-center justify-between text-sm text-muted-foreground">
         <div className="flex items-center gap-2">
@@ -1328,6 +1382,7 @@ function TeamMatchCard({
         )}
       </details>
     </Card>
+    </div>
   );
 }
 
@@ -2166,6 +2221,7 @@ function EditDoublesMatchDialog({
   match,
   disabled,
   onSave,
+  autoOpen,
 }: {
   title: string;
   match: MatchResolved;
@@ -2175,8 +2231,16 @@ function EditDoublesMatchDialog({
     status?: Status;
     winner?: string | null;
   }) => Promise<boolean>;
+  autoOpen?: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const consumedAutoOpen = useRef(false);
+  useEffect(() => {
+    if (autoOpen && !consumedAutoOpen.current) {
+      consumedAutoOpen.current = true;
+      setOpen(true);
+    }
+  }, [autoOpen]);
   const minRows = Math.ceil(match.bestOf / 2);
   const initialRows: Array<{ a: string; b: string }> =
     match.sets.length > 0
