@@ -502,6 +502,18 @@ export function DoublesSchedule({
   };
   const standings = computeDoublesStandings(entries, matches);
   const color = groupColor(groupId);
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const clearedRef = useRef(false);
+  useEffect(() => {
+    if (!autoOpenMatchId || clearedRef.current) return;
+    clearedRef.current = true;
+    const next = new URLSearchParams(searchParams?.toString() ?? "");
+    next.delete("match");
+    const qs = next.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  }, [autoOpenMatchId, pathname, searchParams, router]);
   return (
     <div className="flex flex-col gap-4">
       <Card className={`p-4 ${color.border} ${color.bg}`}>
@@ -766,6 +778,18 @@ export function TeamSchedule({
   };
   const standings = computeTeamStandings(entries, matches);
   const color = groupColor(groupId);
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const clearedRef = useRef(false);
+  useEffect(() => {
+    if (!autoOpenMatchId || clearedRef.current) return;
+    clearedRef.current = true;
+    const next = new URLSearchParams(searchParams?.toString() ?? "");
+    next.delete("match");
+    const qs = next.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  }, [autoOpenMatchId, pathname, searchParams, router]);
   return (
     <div className="flex flex-col gap-4">
       <Card className={`p-4 ${color.border} ${color.bg}`}>
