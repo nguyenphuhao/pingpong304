@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import {
   CheckCircle2,
@@ -75,7 +75,7 @@ import { TeamsSection } from "./_teams-section";
 import { GroupsSection } from "./_groups-section";
 import { AiSingleMatchButton } from "./_ai-chat-modal";
 
-const DEFAULT_TAB = "players";
+const DEFAULT_TAB = "groups";
 const TAB_VALUES = ["players", "entries", "groups", "ko"] as const;
 type TabValue = (typeof TAB_VALUES)[number];
 
@@ -101,19 +101,19 @@ export function ContentWorkspace({
   knockout: DoublesKoResolved[] | TeamKoResolved[];
 }) {
   const isDoubles = kind === "doubles";
-  const router = useRouter();
-  const pathname = usePathname();
   const searchParams = useSearchParams();
   const raw = searchParams.get("tab");
-  const tab: TabValue = isTabValue(raw) ? raw : DEFAULT_TAB;
+  const [tab, setTab] = useState<TabValue>(isTabValue(raw) ? raw : DEFAULT_TAB);
 
   const handleTabChange = (value: unknown) => {
     if (typeof value !== "string" || !isTabValue(value)) return;
-    const params = new URLSearchParams(searchParams);
+    setTab(value);
+    const params = new URLSearchParams(window.location.search);
     if (value === DEFAULT_TAB) params.delete("tab");
     else params.set("tab", value);
     const qs = params.toString();
-    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    const url = qs ? `${window.location.pathname}?${qs}` : window.location.pathname;
+    window.history.replaceState(null, "", url);
   };
 
   return (
