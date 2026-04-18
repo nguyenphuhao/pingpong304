@@ -1,5 +1,4 @@
 import { Medal, Shield, Users } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { SwipeCarousel } from "./_SwipeCarousel";
 import { MatchCard } from "./_MatchCard";
 import { StandingsSummary } from "./_StandingsSummary";
@@ -286,14 +285,11 @@ export function ContentHome({
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col gap-5 p-4">
       {/* 1. Header */}
-      <header className="flex items-center justify-between pt-2">
-        <div className="flex items-center gap-2">
-          <Icon className={`size-5 ${titleColor}`} />
-          <h1 className="text-xl font-semibold leading-tight">
-            Nội dung {isDoubles ? "Đôi" : "Đồng đội"}
-          </h1>
-        </div>
-        <Badge variant="secondary">Đang diễn ra</Badge>
+      <header className="flex items-center gap-2 pt-2">
+        <Icon className={`size-5 ${titleColor}`} />
+        <h1 className="text-xl font-semibold leading-tight">
+          Nội dung {isDoubles ? "Đôi" : "Đồng đội"}
+        </h1>
       </header>
 
       {/* 2. Tournament name block */}

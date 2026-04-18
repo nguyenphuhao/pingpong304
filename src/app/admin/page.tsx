@@ -2,7 +2,6 @@ import Link from "next/link";
 import { ChevronRight, ExternalLink, Shield, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { logoutAction } from "./actions";
 
 export default function AdminHome() {
@@ -37,10 +36,7 @@ export default function AdminHome() {
               <Users className="size-5" />
             </div>
             <div className="flex-1">
-              <div className="flex items-center gap-2">
-                <span className="font-medium">Nội dung Đôi</span>
-                <Badge variant="secondary" className="text-sm">Đang diễn ra</Badge>
-              </div>
+              <span className="font-medium">Nội dung Đôi</span>
               <p className="text-sm text-muted-foreground">6 VĐV · 3 cặp · 2 bảng</p>
             </div>
             <ChevronRight className="size-4 text-muted-foreground" />
@@ -53,10 +49,7 @@ export default function AdminHome() {
               <Shield className="size-5" />
             </div>
             <div className="flex-1">
-              <div className="flex items-center gap-2">
-                <span className="font-medium">Nội dung Đồng đội</span>
-                <Badge variant="outline" className="text-sm">Sắp diễn ra</Badge>
-              </div>
+              <span className="font-medium">Nội dung Đồng đội</span>
               <p className="text-sm text-muted-foreground">6 VĐV · 2 đội · 1 bảng</p>
             </div>
             <ChevronRight className="size-4 text-muted-foreground" />
