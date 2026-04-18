@@ -22,8 +22,8 @@ import {
 } from "./_search-filter";
 
 const STATUS_LABEL: Record<MatchIndexItem["status"], string> = {
-  live: "Đang đá",
-  scheduled: "Sắp đá",
+  live: "Đang đấu",
+  scheduled: "Chưa đấu",
   done: "Đã xong",
   forfeit: "Bỏ cuộc",
 };
