@@ -179,7 +179,7 @@ function AdminSearchSheet({
         )}
         {emptyReason === "no-live" && (
           <p className="py-10 text-center text-sm text-muted-foreground">
-            Chưa có trận đang đá. Gõ để tìm.
+            Chưa có trận đang đấu. Gõ để tìm.
           </p>
         )}
         {emptyReason === "no-match" && (
