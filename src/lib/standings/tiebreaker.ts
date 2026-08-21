@@ -33,7 +33,7 @@ export function applyTeamRanking(
 
 // ── Metric abstraction ──────────────────────────────────────────────
 
-type Metric<M> = {
+export type Metric<M> = {
   entryAId: (m: M) => string;
   entryBId: (m: M) => string;
   scoreA: (m: M) => number;
@@ -41,7 +41,7 @@ type Metric<M> = {
   winnerId: (m: M) => string | null;
 };
 
-const doublesMetric: Metric<DoublesMatchForTiebreak> = {
+export const doublesMetric: Metric<DoublesMatchForTiebreak> = {
   entryAId: (m) => m.pairA.id,
   entryBId: (m) => m.pairB.id,
   scoreA: (m) => m.setsA,
@@ -157,7 +157,7 @@ function resolveTwo<M>(
   ];
 }
 
-function findH2H<M>(
+export function findH2H<M>(
   idA: string,
   idB: string,
   matches: M[],
@@ -170,6 +170,43 @@ function findH2H<M>(
   });
   if (!match) return null;
   return metric.winnerId(match);
+}
+
+export type MiniStats = { won: number; diff: number; setsWon: number };
+
+/**
+ * Bảng con: chỉ tính các trận giữa những cặp trong nhóm bằng điểm.
+ *
+ * Tách riêng để cả tầng xếp hạng lẫn tầng giải thích dùng chung một phép tính —
+ * hai bản chép rời là hai cơ hội nói khác nhau về cùng một bảng.
+ */
+export function miniLeagueTable<M>(
+  ids: readonly string[],
+  matchesAmongThem: readonly M[],
+  metric: Metric<M>,
+): Map<string, MiniStats> {
+  const rows = new Map<string, MiniStats>();
+  for (const id of ids) rows.set(id, { won: 0, diff: 0, setsWon: 0 });
+
+  for (const m of matchesAmongThem) {
+    const aId = metric.entryAId(m);
+    const bId = metric.entryBId(m);
+    const sa = metric.scoreA(m);
+    const sb = metric.scoreB(m);
+    const ra = rows.get(aId);
+    const rb = rows.get(bId);
+    if (!ra || !rb) continue;
+
+    ra.diff += sa - sb;
+    rb.diff += sb - sa;
+    ra.setsWon += sa;
+    rb.setsWon += sb;
+
+    const winner = metric.winnerId(m);
+    if (winner === aId) ra.won += 1;
+    else if (winner === bId) rb.won += 1;
+  }
+  return rows;
 }
 
 function resolveMiniLeague<M>(
@@ -187,32 +224,11 @@ function resolveMiniLeague<M>(
     return ids.has(a) && ids.has(b);
   });
 
-  const miniRows = new Map<string, { won: number; diff: number; setsWon: number }>();
-  for (const r of tied) {
-    miniRows.set(r.entryId, { won: 0, diff: 0, setsWon: 0 });
-  }
-
-  for (const m of miniMatches) {
-    const aId = metric.entryAId(m);
-    const bId = metric.entryBId(m);
-    const sa = metric.scoreA(m);
-    const sb = metric.scoreB(m);
-    const winner = metric.winnerId(m);
-    const ra = miniRows.get(aId);
-    const rb = miniRows.get(bId);
-    if (!ra || !rb) continue;
-
-    ra.diff += sa - sb;
-    rb.diff += sb - sa;
-    ra.setsWon += sa;
-    rb.setsWon += sb;
-
-    if (winner === aId) {
-      ra.won += 1;
-    } else if (winner === bId) {
-      rb.won += 1;
-    }
-  }
+  const miniRows = miniLeagueTable(
+    tied.map((r) => r.entryId),
+    miniMatches,
+    metric,
+  );
 
   const sortedTied = [...tied].sort((a, b) => {
     const ma = miniRows.get(a.entryId)!;

@@ -19,12 +19,17 @@ const StandingRowSchema = z.object({
 const RequestSchema = z.object({
   rows: z.array(StandingRowSchema).min(1),
   kind: z.enum(["doubles", "team"]),
+  /**
+   * Lý do phân định của TỪNG nhóm bằng điểm, đã tính sẵn bằng
+   * explainDoublesRanking(). Model chỉ được diễn đạt lại, không được tự suy.
+   */
+  notes: z.array(z.string()).optional().default([]),
 });
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { rows, kind } = RequestSchema.parse(body);
+    const { rows, kind, notes } = RequestSchema.parse(body);
 
     const diffLabel = kind === "doubles" ? "hiệu số ván" : "hiệu số trận cá nhân";
 
@@ -35,25 +40,41 @@ export async function POST(req: Request) {
       )
       .join("\n");
 
+    // Nhóm bằng điểm là chỗ model hay bịa nhất: trước đây nó chỉ nhận bảng xếp
+    // hạng cuối rồi tự suy, và đã nói "hiệu số cao hơn nên xếp trên" cho cặp có
+    // hiệu số THẤP hơn. Nay lý do do code tính, model chỉ được thuật lại.
+    const factsBlock =
+      notes.length > 0
+        ? `\nLÝ DO PHÂN ĐỊNH (đã tính sẵn bằng code — SỰ THẬT, phải dùng nguyên):\n` +
+          notes.map((n) => `  - ${n}`).join("\n")
+        : `\nLÝ DO PHÂN ĐỊNH: KHÔNG có dữ liệu. Nếu có nhóm bằng số trận thắng, chỉ được nói ` +
+          `"hai/ba cặp bằng số trận thắng, hệ thống đã phân định theo điều lệ" — TUYỆT ĐỐI ` +
+          `không đoán tiêu chí nào đã được dùng.`;
+
     const prompt = `Bạn là giải thuyết viên giải bóng bàn. Giải thích bảng xếp hạng sau bằng tiếng Việt, ngắn gọn, dễ hiểu.
 
 Nội dung: ${kind === "doubles" ? "Đôi" : "Đồng đội"}
 
-Bảng xếp hạng:
+Bảng xếp hạng (thứ tự đã chốt, KHÔNG được sắp lại):
 ${standingsText}
+${factsBlock}
 
-Quy tắc xếp hạng (theo thứ tự ưu tiên):
-1. Số trận thắng (nhiều hơn = xếp trên)
-2. Nếu bằng trận thắng → đối đầu trực tiếp (ai thắng trận giữa 2 người xếp trên)
-3. Nếu vẫn bằng → ${diffLabel} (cao hơn = xếp trên)
-4. Nếu vẫn bằng → tổng số ván thắng (nhiều hơn = xếp trên)
-5. Nếu 3+ đội bằng điểm → tính mini-league chỉ giữa các đội bằng điểm rồi áp dụng lại quy tắc trên
+Thứ tự tiêu chí theo điều lệ:
+1. Số trận thắng — nhiều hơn xếp trên. ${diffLabel} KHÔNG tham gia ở bước này.
+2. Bằng số trận thắng và ĐÚNG 2 cặp → đối đầu trực tiếp. Quyết định luôn, kể cả khi
+   cặp thắng có ${diffLabel} thấp hơn.
+3. Bằng số trận thắng và TỪ 3 CẶP trở lên → lập bảng con, chỉ tính các trận giữa họ,
+   xét lần lượt: thắng bảng con → hiệu số bảng con → ván thắng bảng con.
+4. Vẫn bằng nhau hoàn toàn → đồng hạng, BTC bốc thăm.
 
-Nhiệm vụ:
-- Giải thích TẠI SAO mỗi đội/cặp xếp ở vị trí đó
-- Đặc biệt chú ý giải thích khi có bằng điểm — dùng tiêu chí nào để phân biệt?
-- Nếu không có bằng điểm, chỉ cần nói ngắn gọn
-- Viết tự nhiên, dùng bullet points, tối đa 200 từ`;
+RÀNG BUỘC BẮT BUỘC:
+- Chỉ được nêu lý do có trong phần LÝ DO PHÂN ĐỊNH ở trên. Không tự nghĩ ra tiêu chí khác.
+- KHÔNG tự làm phép so sánh số. Mọi con số phải chép nguyên từ dữ liệu đã cho.
+- KHÔNG bao giờ viết "hiệu số cao hơn nên xếp trên" trừ khi LÝ DO PHÂN ĐỊNH nói đúng như vậy.
+- Nếu một cặp xếp trên dù ${diffLabel} thấp hơn, phải nói rõ vì sao — đây là chỗ người xem
+  dễ tưởng hệ thống tính sai nhất.
+
+Nhiệm vụ: giải thích ngắn gọn vì sao mỗi cặp ở vị trí đó. Dùng gạch đầu dòng, tối đa 220 từ.`;
 
     const result = await generateText({
       model: gateway(AI_MODEL),

@@ -5,16 +5,21 @@ import { Loader2, Sparkles, Trophy } from "lucide-react";
 import { SwipeCarousel } from "./_SwipeCarousel";
 import { groupColor } from "./_groupColors";
 import type { StandingRow } from "@/lib/db/standings";
+import type { MatchResolved } from "@/lib/schemas/match";
+import { explainDoublesRanking } from "@/lib/standings/explain";
 import type { GroupResolved } from "@/lib/schemas/group";
 
 export function StandingsSummary({
   kind,
   groups,
   standings,
+  matchesByGroup,
 }: {
   kind: "doubles" | "teams";
   groups: GroupResolved[];
   standings: Map<string, StandingRow[]>;
+  /** Cần để tính LÝ DO phân định; thiếu thì AI không được đoán. */
+  matchesByGroup?: Map<string, MatchResolved[]>;
 }) {
   return (
     <section>
@@ -81,6 +86,14 @@ export function StandingsSummary({
                 rows={rows}
                 kind={kind === "doubles" ? "doubles" : "team"}
                 disabled={!played}
+                notes={
+                  kind === "doubles" && matchesByGroup?.get(g.id)
+                    ? explainDoublesRanking(
+                        g.entries,
+                        matchesByGroup.get(g.id)!,
+                      ).map((n) => n.text)
+                    : []
+                }
               />
             </div>
           );
@@ -145,10 +158,12 @@ function ExplainButton({
   rows,
   kind,
   disabled = false,
+  notes = [],
 }: {
   rows: StandingRow[];
   kind: "doubles" | "team";
   disabled?: boolean;
+  notes?: string[];
 }) {
   const [explanation, setExplanation] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -178,7 +193,7 @@ function ExplainButton({
       const res = await fetch("/api/ai/explain-standings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rows: apiRows, kind }),
+        body: JSON.stringify({ rows: apiRows, kind, notes }),
       });
       const json = await res.json();
       if (json.data) {

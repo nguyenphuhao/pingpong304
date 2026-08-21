@@ -11,6 +11,7 @@ import type {
 } from "@/lib/schemas/match";
 import type { DoublesKoResolved, TeamKoResolved } from "@/lib/schemas/knockout";
 import type { StandingRow } from "@/lib/db/standings";
+import { TOURNAMENT } from "@/lib/tournament";
 
 type Props = {
   kind: "doubles" | "teams";
@@ -295,10 +296,10 @@ export function ContentHome({
       {/* 2. Tournament name block */}
       <div className="border-l-2 border-emerald-500/50 pl-3">
         <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-          CLB Bóng Bàn Bình Tân
+          {TOURNAMENT.club}
         </p>
         <p className="mt-0.5 text-base leading-snug text-foreground/80">
-          Giải Bóng Bàn Kỷ niệm 51 năm ngày thống nhất đất nước
+          {TOURNAMENT.name}
         </p>
       </div>
 
@@ -309,7 +310,16 @@ export function ContentHome({
       <LiveSection kind={kind} groups={groups} liveMatches={liveMatches} />
 
       {/* 5. Standings summary */}
-      <StandingsSummary kind={kind} groups={groups} standings={standings} />
+      <StandingsSummary
+        kind={kind}
+        groups={groups}
+        standings={standings}
+        matchesByGroup={
+          kind === "doubles"
+            ? (matchesByGroup as Map<string, MatchResolved[]>)
+            : undefined
+        }
+      />
 
       {/* 6. Recent results */}
       <RecentSection

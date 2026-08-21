@@ -75,6 +75,7 @@ import { PairsSection } from "./_pairs-section";
 import { TeamsSection } from "./_teams-section";
 import { GroupsSection } from "./_groups-section";
 import { AiSingleMatchButton } from "./_ai-chat-modal";
+import { explainDoublesRanking } from "@/lib/standings/explain";
 
 const DEFAULT_TAB = "groups";
 const TAB_VALUES = ["players", "entries", "groups", "ko"] as const;
@@ -348,9 +349,12 @@ function inlineFmt(s: string): string {
 function ExplainStandingsButton({
   rows,
   kind,
+  notes = [],
 }: {
   rows: StandingRow[];
   kind: "doubles" | "team";
+  /** Lý do phân định tính sẵn; thiếu thì AI không được đoán tiêu chí. */
+  notes?: string[];
 }) {
   const [open, setOpen] = useState(false);
   const [explanation, setExplanation] = useState<string | null>(null);
@@ -363,7 +367,7 @@ function ExplainStandingsButton({
       const res = await fetch("/api/ai/explain-standings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rows, kind }),
+        body: JSON.stringify({ rows, kind, notes }),
       });
       const json = await res.json();
       if (json.data) {
@@ -428,9 +432,11 @@ function StandingsCard({
   rows,
   diffLabel,
   kind,
+  notes,
 }: {
   rows: StandingRow[];
   diffLabel: string;
+  notes?: string[];
   kind?: "doubles" | "team";
 }) {
   const played = rows.some((r) => r.played > 0);
@@ -449,7 +455,9 @@ function StandingsCard({
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {played && kind && <ExplainStandingsButton rows={rows} kind={kind} />}
+          {played && kind && (
+            <ExplainStandingsButton rows={rows} kind={kind} notes={notes} />
+          )}
           <div className="text-xs text-muted-foreground">Thắng: 1 điểm</div>
         </div>
       </div>
@@ -562,7 +570,12 @@ export function DoublesSchedule({
         </ol>
       </Card>
 
-      <StandingsCard rows={standings} diffLabel="Hiệu số ván" kind="doubles" />
+      <StandingsCard
+        rows={standings}
+        diffLabel="Hiệu số ván"
+        kind="doubles"
+        notes={explainDoublesRanking(entries, matches).map((n) => n.text)}
+      />
       </div>
 
       <MatchScheduleSection
