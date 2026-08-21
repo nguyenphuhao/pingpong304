@@ -33,7 +33,7 @@ export default async function TeamGroupDetailPage({
   for (const t of allTeams) teamPlayersByTeamId[t.id] = t.members;
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col gap-5 p-4">
+    <main className="mx-auto flex min-h-dvh w-full max-w-md md:max-w-3xl lg:max-w-5xl flex-col gap-5 p-4">
       <header className="sticky top-0 z-20 -mx-4 -mt-4 flex items-center gap-2 bg-background px-4 pb-3 pt-4">
         <Button
           nativeButton={false}

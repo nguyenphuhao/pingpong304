@@ -35,7 +35,7 @@ export default async function TeamsAdminPage() {
   ]);
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-4 pb-8">
+    <main className="mx-auto flex min-h-dvh w-full max-w-md md:max-w-3xl lg:max-w-5xl flex-col px-4 pb-8">
       <ContentWorkspace
         kind="teams"
         headerSlot={

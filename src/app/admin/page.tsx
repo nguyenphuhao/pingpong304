@@ -6,7 +6,7 @@ import { logoutAction } from "./actions";
 
 export default function AdminHome() {
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col gap-5 p-4">
+    <main className="mx-auto flex min-h-dvh w-full max-w-md md:max-w-3xl lg:max-w-5xl flex-col gap-5 p-4">
       <header className="flex items-center justify-between gap-2">
         <div>
           <h1 className="text-xl font-semibold">Ban Tổ Chức</h1>

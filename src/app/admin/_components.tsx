@@ -179,6 +179,17 @@ export function SectionHeader({
 
 /* ---------- Schedule ---------- */
 
+/**
+ * Kiểu ô nhập tỉ số ván — thao tác chính của cả màn admin nên tô đậm hơn ô thường.
+ *
+ * Viền mặc định `border-input` ở nền tối gần như trùng màu nền (đo được
+ * lab(14.19 0 0) trên nền popover) nên người nhập không thấy ô ở đâu. Dùng viền
+ * theo màu chữ để rõ ở cả hai nền. Cao 44px cho vừa đầu ngón tay, chữ to canh
+ * giữa, tabular-nums để số không nhảy cột khi gõ.
+ */
+const SCORE_INPUT =
+  "h-11 border-2 border-foreground/25 text-center text-lg font-semibold tabular-nums focus-visible:border-primary";
+
 const STATUS_META: Record<Status, { label: string; className: string }> = {
   scheduled: { label: "Chưa đấu", className: "bg-muted text-muted-foreground" },
   live: { label: "Đang đấu", className: "bg-red-500/15 text-red-600 dark:text-red-400 animate-pulse" },
@@ -516,7 +527,13 @@ export function DoublesSchedule({
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
   }, [autoOpenMatchId, pathname, searchParams, router]);
   return (
-    <div className="flex flex-col gap-4">
+    /*
+      Màn rộng tách hai cột: trái là danh sách cặp + bảng xếp hạng (dính theo
+      cuộn), phải là lịch thi đấu. Nhập xong thấy thứ hạng đổi ngay, không phải
+      cuộn lên cuộn xuống đối chiếu. Dưới 1024px vẫn xếp dọc như cũ.
+    */
+    <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[21rem_1fr] lg:items-start lg:gap-6">
+      <div className="flex flex-col gap-4 lg:sticky lg:top-20">
       <Card className={`p-4 ${color.border} ${color.bg}`}>
         <div className="mb-2 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -546,6 +563,7 @@ export function DoublesSchedule({
       </Card>
 
       <StandingsCard rows={standings} diffLabel="Hiệu số ván" kind="doubles" />
+      </div>
 
       <MatchScheduleSection
         title="Lịch thi đấu vòng bảng"
@@ -1787,12 +1805,14 @@ function SubSetsEditor({
                   value={row.a}
                   onChange={(e) => updateRow(i, "a", e.target.value)}
                   inputMode="numeric"
+                  className={SCORE_INPUT}
                 />
                 <span className="text-muted-foreground">-</span>
                 <Input
                   value={row.b}
                   onChange={(e) => updateRow(i, "b", e.target.value)}
                   inputMode="numeric"
+                  className={SCORE_INPUT}
                 />
                 <Button
                   type="button"
@@ -2170,12 +2190,14 @@ function EditMatchDialog({
                   value={row.a}
                   onChange={(e) => updateRow(i, "a", e.target.value)}
                   inputMode="numeric"
+                  className={SCORE_INPUT}
                 />
                 <span className="text-muted-foreground">-</span>
                 <Input
                   value={row.b}
                   onChange={(e) => updateRow(i, "b", e.target.value)}
                   inputMode="numeric"
+                  className={SCORE_INPUT}
                 />
                 <Button
                   type="button"
@@ -2310,7 +2332,8 @@ function EditDoublesMatchDialog({
       >
         <Pencil />
       </DialogTrigger>
-      <DialogContent>
+      {/* Rộng hơn mặc định 384px: bảng nhập tỉ số từng ván cần chỗ thở trên desktop. */}
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Sửa trận · {title}</DialogTitle>
           <DialogDescription>
@@ -2385,12 +2408,14 @@ function EditDoublesMatchDialog({
                   value={row.a}
                   onChange={(e) => updateRow(i, "a", e.target.value)}
                   inputMode="numeric"
+                  className={SCORE_INPUT}
                 />
                 <span className="text-muted-foreground">-</span>
                 <Input
                   value={row.b}
                   onChange={(e) => updateRow(i, "b", e.target.value)}
                   inputMode="numeric"
+                  className={SCORE_INPUT}
                 />
                 <Button
                   type="button"
@@ -3062,9 +3087,9 @@ function KoSetsEditor({
           {rows.map((row, i) => (
             <div key={i} className="grid grid-cols-[3rem_1fr_auto_1fr_auto] items-center gap-2">
               <span className="text-sm text-muted-foreground">Ván {i + 1}</span>
-              <Input value={row.a} onChange={(e) => updateRow(i, "a", e.target.value)} inputMode="numeric" />
+              <Input value={row.a} onChange={(e) => updateRow(i, "a", e.target.value)} inputMode="numeric" className={SCORE_INPUT} />
               <span className="text-muted-foreground">-</span>
-              <Input value={row.b} onChange={(e) => updateRow(i, "b", e.target.value)} inputMode="numeric" />
+              <Input value={row.b} onChange={(e) => updateRow(i, "b", e.target.value)} inputMode="numeric" className={SCORE_INPUT} />
               <Button type="button" size="icon-sm" variant="ghost" aria-label="Xoá ván" onClick={() => removeRow(i)} disabled={rows.length <= 1} className="bg-destructive/10 hover:bg-destructive/20">
                 <Trash2 className="text-destructive" />
               </Button>
