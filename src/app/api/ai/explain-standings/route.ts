@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { generateText, gateway } from "ai";
+import { AI_MODEL } from "@/lib/ai/model";
 // Auth removed — this endpoint is safe for public use (read-only AI analysis)
 
 const StandingRowSchema = z.object({
@@ -55,7 +56,7 @@ Nhiệm vụ:
 - Viết tự nhiên, dùng bullet points, tối đa 200 từ`;
 
     const result = await generateText({
-      model: gateway("anthropic/claude-haiku-4.5"),
+      model: gateway(AI_MODEL),
       prompt,
       temperature: 0,
       providerOptions: {

@@ -11,6 +11,7 @@ import { z } from "zod";
 import { checkRateLimit } from "@/lib/ai/chat/rate-limit";
 import { buildSystemPrompt } from "@/lib/ai/chat/system-prompt";
 import { chatTools } from "@/lib/ai/chat/tools";
+import { AI_MODEL } from "@/lib/ai/model";
 
 export const maxDuration = 30;
 
@@ -76,7 +77,7 @@ export async function POST(req: Request) {
   );
 
   const result = streamText({
-    model: gateway("anthropic/claude-haiku-4.5"),
+    model: gateway(AI_MODEL),
     system,
     messages,
     tools: chatTools,

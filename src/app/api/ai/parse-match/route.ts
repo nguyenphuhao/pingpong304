@@ -9,6 +9,7 @@ import {
   RejectionSchema,
 } from "@/lib/ai/schemas";
 import type { UserContent } from "ai";
+import { AI_MODEL } from "@/lib/ai/model";
 
 const BestOfVal = z.union([z.literal(3), z.literal(5)]);
 
@@ -79,7 +80,7 @@ export async function POST(req: Request) {
     });
 
     const result = await generateText({
-      model: gateway("anthropic/claude-haiku-4.5"),
+      model: gateway(AI_MODEL),
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userContent },
