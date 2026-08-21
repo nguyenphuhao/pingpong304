@@ -1,0 +1,777 @@
+<title>Dữ liệu thử vòng bảng</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+:root{
+  --paper:#F4F6F9; --card:#FFFFFF; --ink:#0B1626; --dim:#5A6B80;
+  --line:#D9E1EA; --line-2:#EDF1F6; --navy:#0E2A4E;
+  --ok:#047857; --ok-bg:#E3F4EE; --warn:#B45309; --warn-bg:#FBF0DC;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --paper:#0A0F16; --card:#141C26; --ink:#E8EEF5; --dim:#9BADC1;
+  --line:#26323F; --line-2:#1E2833; --navy:#0B2544;
+  --ok:#4ADE9E; --ok-bg:#10291F; --warn:#E3A855; --warn-bg:#2A2010;
+}}
+:root[data-theme="dark"]{
+  --paper:#0A0F16; --card:#141C26; --ink:#E8EEF5; --dim:#9BADC1;
+  --line:#26323F; --line-2:#1E2833; --navy:#0B2544;
+  --ok:#4ADE9E; --ok-bg:#10291F; --warn:#E3A855; --warn-bg:#2A2010;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);
+  font-family:"Be Vietnam Pro",system-ui,sans-serif;line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1100px;margin:0 auto;padding:32px 18px 64px;display:flex;flex-direction:column;gap:26px}
+h1{margin:0;font-size:clamp(24px,3.6vw,34px);font-weight:700;letter-spacing:-.02em}
+.lead{margin:0;max-width:70ch;color:var(--dim);font-size:15px}
+.note{border:1px solid var(--warn);border-left-width:4px;background:var(--warn-bg);
+  border-radius:10px;padding:13px 15px;font-size:14.5px}
+.note b{color:var(--warn)}
+.grp{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.grp-h{display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--tone);color:#fff}
+.letter{width:40px;height:40px;flex:none;border-radius:10px;background:rgba(255,255,255,.2);
+  display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700}
+.grp-h h2{margin:0;font-size:17px;font-weight:700}
+.grp-h .dim{color:rgba(255,255,255,.8);font-size:12.5px;margin:2px 0 0}
+.why{margin:0;padding:13px 16px;border-bottom:1px solid var(--line);font-size:14px;color:var(--ink)}
+.why b{font-weight:700}
+h3{margin:0;padding:14px 16px 6px;font-size:12px;font-weight:700;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--dim)}
+.expect{margin:0;padding:0 16px 10px;font-size:14px;font-weight:500}
+table{width:100%;border-collapse:collapse}
+th{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);
+  text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);background:var(--line-2)}
+td{padding:9px 10px;border-bottom:1px solid var(--line-2);font-size:14.5px;vertical-align:middle}
+tbody tr:last-child td{border-bottom:0}
+.tick{width:34px}
+.box{display:inline-block;width:17px;height:17px;border:2px solid var(--dim);border-radius:4px}
+.no{width:38px;font-weight:700;font-variant-numeric:tabular-nums}
+.meta{width:70px;font-family:"JetBrains Mono",monospace;font-size:12.5px;line-height:1.35}
+.dim{color:var(--dim)}
+.side{min-width:150px}
+.code{display:inline-block;min-width:26px;margin-right:5px;padding:1px 5px;border-radius:4px;
+  background:var(--tone);color:#fff;font-size:11.5px;font-weight:700}
+.vs{width:20px;text-align:center;color:var(--dim)}
+.score{font-family:"JetBrains Mono",monospace;font-size:16px;font-weight:700;white-space:nowrap}
+.res{width:44px;font-family:"JetBrains Mono",monospace;font-weight:700;color:var(--dim)}
+.stand .rk{width:46px;font-weight:700;font-variant-numeric:tabular-nums}
+.stand .num{width:56px;font-family:"JetBrains Mono",monospace;font-variant-numeric:tabular-nums}
+.stand .badge{width:96px;font-size:11px;font-weight:700;letter-spacing:.05em}
+.stand tr.advance{background:var(--ok-bg)}
+.stand tr.advance .badge{color:var(--ok)}
+.stand tr.drawLots{background:var(--warn-bg)}
+.stand tr.drawLots .badge{color:var(--warn)}
+.tail{border-top:1px solid var(--line);padding-top:16px;font-size:13px;color:var(--dim)}
+@media print{
+  body{background:#fff}
+  .grp{break-inside:avoid;page-break-inside:avoid}
+  .wrap{max-width:none;padding:0;gap:14px}
+}
+</style>
+<div class="wrap">
+  <header>
+    <h1>Dữ liệu thử vòng bảng</h1>
+    <p class="lead">Bốn bảng, mỗi bảng dựng một tình huống phân định khác nhau. Nhập lần lượt
+      từng trận trong <b>/admin/doubles</b>, xong so với bảng xếp hạng kỳ vọng ở cuối mỗi mục.
+      Ô vuông đầu dòng để đánh dấu trận đã nhập.</p>
+  </header>
+
+  <div class="note">
+    <b>Đây là dữ liệu thử, không phải kết quả thật.</b> Nhập xong nhớ chạy
+    <code>npx tsx scripts/seed-giai-02-09.ts --apply</code> để xoá sạch trước giờ thi đấu.
+  </div>
+
+  
+    <section class="grp" style="--tone:#047857;--tone-soft:#E3F4EE">
+      <header class="grp-h">
+        <span class="letter">A</span>
+        <div>
+          <h2>Bảng A — Không cần phân định</h2>
+          <p class="dim">Bàn 1 · 10 trận · BO3 thắng 2 ván · mã trận dm01–dm10</p>
+        </div>
+      </header>
+
+      <p class="why"><b>Kịch bản này thử gì:</b> Thắng 4-3-2-1-0, mỗi cặp một số trận thắng khác nhau. Hệ thống xếp thẳng theo số trận thắng, không dùng tới luật phân định nào.</p>
+
+      <table class="matches">
+        <thead>
+          <tr><th></th><th>Trận</th><th>Giờ</th><th>Cặp 1</th><th></th><th>Cặp 2</th><th>Tỉ số từng ván</th><th>Ván</th></tr>
+        </thead>
+        <tbody>
+        <tr>
+          <td class="tick"><span class="box"></span></td>
+          <td class="no">1</td>
+          <td class="meta">13:00<br><span class="dim">Bàn 1</span></td>
+          <td class="side"><b class="code">A1</b> Nghiệp / Mạnh</td>
+          <td class="vs">–</td>
+          <td class="side"><b class="code">A2</b> Cường (lớn) / Hảo</td>
+          <td class="score">11-8   11-6</td>
+          <td class="res">2-0</td>
+        </tr>
+        <tr>
+          <td class="tick"><span class="box"></span></td>
+          <td class="no">2</td>
+          <td class="meta">13:15<br><span class="dim">Bàn 1</span></td>
+          <td class="side"><b class="code">A3</b> H'Lim / Phương</td>
+          <td class="vs">–</td>
+          <td class="side"><b class="code">A4</b> Dũng / Phượng</td>
+          <td class="score">11-8   11-6</td>
+          <td class="res">2-0</td>
+        </tr>
+        <tr>
+          <td class="tick"><span class="box"></span></td>
+          <td class="no">3</td>
+          <td class="meta">13:30<br><span class="dim">Bàn 1</span></td>
+          <td class="side"><b class="code">A1</b> Nghiệp / Mạnh</td>
+          <td class="vs">–</td>
+          <td class="side"><b class="code">A5</b> Thái Sơn / Viết Tài</td>
+          <td class="score">11-8   11-6</td>
+          <td class="res">2-0</td>
+        </tr>
+        <tr>
+          <td class="tick"><span class="box"></span></td>
+          <td class="no">4</td>
+          <td class="meta">13:45<br><span class="dim">Bàn 1</span></td>
+          <td class="side"><b class="code">A2</b> Cường (lớn) / Hảo</td>
+          <td class="vs">–</td>
+          <td class="side"><b class="code">A3</b> H'Lim / Phương</td>
+          <td class="score">11-8   11-6</td>
+          <td class="res">2-0</td>
+        </tr>
+        <tr>
+          <td class="tick"><span class="box"></span></td>
+          <td class="no">5</td>
+          <td class="meta">14:00<br><span class="dim">Bàn 1</span></td>
+          <td class="side"><b class="code">A4</b> Dũng / Phượng</td>
+          <td class="vs">–</td>
+          <td class="side"><b class="code">A5</b> Thái Sơn / Viết Tài</td>
+          <td class="score">11-8   11-6</td>
+          <td class="res">2-0</td>
+        </tr>
+        <tr>
+          <td class="tick"><span class="box"></span></td>
+          <td class="no">6</td>
+          <td class="meta">14:15<br><span class="dim">Bàn 1</span></td>
+          <td class="side"><b class="code">A1</b> Nghiệp / Mạnh</td>
+          <td class="vs">–</td>
+          <td class="side"><b class="code">A3</b> H'Lim / Phương</td>
+          <td class="score">11-8   11-6</td>
+          <td class="res">2-0</td>
+        </tr>
+        <tr>
+          <td class="tick"><span class="box"></span></td>
+          <td class="no">7</td>
+          <td class="meta">14:30<br><span class="dim">Bàn 1</span></td>
+          <td class="side"><b class="code">A2</b> Cường (lớn) / Hảo</td>
+          <td class="vs">–</td>
+          <td class="side"><b class="code">A4</b> Dũng / Phượng</td>
+          <td class="score">11-8   11-6</td>
+          <td class="res">2-0</td>
+        </tr>
+        <tr>
+          <td class="tick"><span class="box"></span></td>
+          <td class="no">8</td>
+          <td class="meta">14:45<br><span class="dim">Bàn 1</span></td>
+          <td class="side"><b class="code">A3</b> H'Lim / Phương</td>
+          <td class="vs">–</td>
+          <td class="side"><b class="code">A5</b> Thái Sơn / Viết Tài</td>
+          <td class="score">11-8   11-6</td>
+          <td class="res">2-0</td>
+        </tr>
+        <tr>
+          <td class="tick"><span class="box"></span></td>
+          <td class="no">9</td>
+          <td class="meta">15:00<br><span class="dim">Bàn 1</span></td>
+          <td class="side"><b class="code">A1</b> Nghiệp / Mạnh</td>
+          <td class="vs">–</td>
+          <td class="side"><b class="code">A4</b> Dũng / Phượng</td>
+          <td class="score">11-8   11-6</td>
+          <td class="res">2-0</td>
+        </tr>
+        <tr>
+          <td class="tick"><span class="box"></span></td>
+          <td class="no">10</td>
+          <td class="meta">15:15<br><span class="dim">Bàn 1</span></td>
+          <td class="side"><b class="code">A2</b> Cường (lớn) / Hảo</td>
+          <td class="vs">–</td>
+          <td class="side"><b class="code">A5</b> Thái Sơn / Viết Tài</td>
+          <td class="score">11-8   11-6</td>
+          <td class="res">2-0</td>
+        </tr></tbody>
+      </table>
+
+      <h3>Nhập xong phải ra đúng như thế này</h3>
+      <p class="expect">A1 nhất · A2 nhì. Hai cặp này gắn nhãn ĐI TIẾP.</p>
+      <table class="stand">
+        <thead>
+          <tr><th>Hạng</th><th>Cặp</th><th>T</th><th>B</th><th>Ván</th><th>HS</th><th></th></tr>
+        </thead>
+        <tbody>
+        <tr class="advance">
+          <td class="rk">1</td>
+          <td><b class="code">A1</b> Nghiệp / Mạnh</td>
+          <td class="num">4</td>
+          <td class="num">0</td>
+          <td class="num">8–0</td>
+          <td class="num">+8</td>
+          <td class="badge">ĐI TIẾP</td>
+        </tr>
+        <tr class="advance">
+          <td class="rk">2</td>
+          <td><b class="code">A2</b> Cường (lớn) / Hảo</td>
+          <td class="num">3</td>
+          <td class="num">1</td>
+          <td class="num">6–2</td>
+          <td class="num">+4</td>
+          <td class="badge">ĐI TIẾP</td>
+        </tr>
+        <tr class="out">
+          <td class="rk">3</td>
+          <td><b class="code">A3</b> H'Lim / Phương</td>
+          <td class="num">2</td>
+          <td class="num">2</td>
+          <td class="num">4–4</td>
+          <td class="num">0</td>
+          <td class="badge"></td>
+        </tr>
+        <tr class="out">
+          <td class="rk">4</td>
+          <td><b class="code">A4</b> Dũng / Phượng</td>
+          <td class="num">1</td>
+          <td class="num">3</td>
+          <td class="num">2–6</td>
+          <td class="num">-4</td>
+          <td class="badge"></td>
+        </tr>
+        <tr class="out">
+          <td class="rk">5</td>
+          <td><b class="code">A5</b> Thái Sơn / Viết Tài</td>
+          <td class="num">0</td>
+          <td class="num">4</td>
+          <td class="num">0–8</td>
+          <td class="num">-8</td>
+          <td class="badge"></td>
+        </tr></tbody>
+      </table>
+    </section>
+    <section class="grp" style="--tone:#1D4ED8;--tone-soft:#E6EDFD">
+      <header class="grp-h">
+        <span class="letter">B</span>
+        <div>
+          <h2>Bảng B — Phân định 2 cặp ở hạng nhì / ba</h2>
+          <p class="dim">Bàn 2 · 10 trận · BO3 thắng 2 ván · mã trận dm11–dm20</p>
+        </div>
+      </header>
+
+      <p class="why"><b>Kịch bản này thử gì:</b> B2 và B3 cùng 2 trận thắng, tranh suất đi tiếp cuối cùng. B2 THẮNG ĐỐI ĐẦU B3 ở trận 4 nhưng hiệu số toàn bảng KÉM HƠN. Phép thử: đối đầu trực tiếp có thắng được hiệu số không.</p>
+
+      <table class="matches">
+        <thead>
+          <tr><th></th><th>Trận</th><th>Giờ</th><th>Cặp 1</th><th></th><th>Cặp 2</th><th>Tỉ số từng ván</th><th>Ván</th></tr>
+        </thead>
+        <tbody>
+        <tr>
+          <td class="tick"><span class="box"></span></td>
+          <td class="no">1</td>
+          <td class="meta">13:00<br><span class="dim">Bàn 2</span></td>
+          <td class="side"><b class="code">B1</b> Mỹ / Hạnh</td>
+          <td class="vs">–</td>
+          <td class="side"><b class="code">B2</b> Quân / Minh</td>
+          <td class="score">11-8   11-6</td>
+          <td class="res">2-0</td>
+        </tr>
+        <tr>
+          <td class="tick"><span class="box"></span></td>
+          <td class="no">2</td>
+          <td class="meta">13:15<br><span class="dim">Bàn 2</span></td>
+          <td class="side"><b class="code">B3</b> Bảo Vinh / Nghĩa</td>
+          <td class="vs">–</td>
+          <td class="side"><b class="code">B4</b> Hồng Nam / Bạch</td>
+          <td class="score">11-8   11-6</td>
+          <td class="res">2-0</td>
+        </tr>
+        <tr>
+          <td class="tick"><span class="box"></span></td>
+          <td class="no">3</td>
+          <td class="meta">13:30<br><span class="dim">Bàn 2</span></td>
+          <td class="side"><b class="code">B1</b> Mỹ / Hạnh</td>
+          <td class="vs">–</td>
+          <td class="side"><b class="code">B5</b> Giang / Bá Sơn</td>
+          <td class="score">11-8   11-6</td>
+          <td class="res">2-0</td>
+        </tr>
+        <tr>
+          <td class="tick"><span class="box"></span></td>
+          <td class="no">4</td>
+          <td class="meta">13:45<br><span class="dim">Bàn 2</span></td>
+          <td class="side"><b class="code">B2</b> Quân / Minh</td>
+          <td class="vs">–</td>
+          <td class="side"><b class="code">B3</b> Bảo Vinh / Nghĩa</td>
+          <td class="score">11-9   9-11   11-7</td>
+          <td class="res">2-1</td>
+        </tr>
+        <tr>
+          <td class="tick"><span class="box"></span></td>
+          <td class="no">5</td>
+          <td class="meta">14:00<br><span class="dim">Bàn 2</span></td>
+          <td class="side"><b class="code">B4</b> Hồng Nam / Bạch</td>
+          <td class="vs">–</td>
+          <td class="side"><b class="code">B5</b> Giang / Bá Sơn</td>
+          <td class="score">11-8   11-6</td>
+          <td class="res">2-0</td>
+        </tr>
+        <tr>
+          <td class="tick"><span class="box"></span></td>
+          <td class="no">6</td>
+          <td class="meta">14:15<br><span class="dim">Bàn 2</span></td>
+          <td class="side"><b class="code">B1</b> Mỹ / Hạnh</td>
+          <td class="vs">–</td>
+          <td class="side"><b class="code">B3</b> Bảo Vinh / Nghĩa</td>
+          <td class="score">11-8   11-6</td>
+          <td class="res">2-0</td>
+        </tr>
+        <tr>
+          <td class="tick"><span class="box"></span></td>
+          <td class="no">7</td>
+          <td class="meta">14:30<br><span class="dim">Bàn 2</span></td>
+          <td class="side"><b class="code">B2</b> Quân / Minh</td>
+          <td class="vs">–</td>
+          <td class="side"><b class="code">B4</b> Hồng Nam / Bạch</td>
+          <td class="score">11-9   9-11   11-7</td>
+          <td class="res">2-1</td>
+        </tr>
+        <tr>
+          <td class="tick"><span class="box"></span></td>
+          <td class="no">8</td>
+          <td class="meta">14:45<br><span class="dim">Bàn 2</span></td>
+          <td class="side"><b class="code">B3</b> Bảo Vinh / Nghĩa</td>
+          <td class="vs">–</td>
+          <td class="side"><b class="code">B5</b> Giang / Bá Sơn</td>
+          <td class="score">11-8   11-6</td>
+          <td class="res">2-0</td>
+        </tr>
+        <tr>
+          <td class="tick"><span class="box"></span></td>
+          <td class="no">9</td>
+          <td class="meta">15:00<br><span class="dim">Bàn 2</span></td>
+          <td class="side"><b class="code">B1</b> Mỹ / Hạnh</td>
+          <td class="vs">–</td>
+          <td class="side"><b class="code">B4</b> Hồng Nam / Bạch</td>
+          <td class="score">11-8   11-6</td>
+          <td class="res">2-0</td>
+        </tr>
+        <tr>
+          <td class="tick"><span class="box"></span></td>
+          <td class="no">10</td>
+          <td class="meta">15:15<br><span class="dim">Bàn 2</span></td>
+          <td class="side"><b class="code">B2</b> Quân / Minh</td>
+          <td class="vs">–</td>
+          <td class="side"><b class="code">B5</b> Giang / Bá Sơn</td>
+          <td class="score">8-11   6-11</td>
+          <td class="res">0-2</td>
+        </tr></tbody>
+      </table>
+
+      <h3>Nhập xong phải ra đúng như thế này</h3>
+      <p class="expect">B1 nhất · B2 nhì (thắng đối đầu) · B3 ba và BỊ LOẠI dù hiệu số tốt hơn B2.</p>
+      <table class="stand">
+        <thead>
+          <tr><th>Hạng</th><th>Cặp</th><th>T</th><th>B</th><th>Ván</th><th>HS</th><th></th></tr>
+        </thead>
+        <tbody>
+        <tr class="advance">
+          <td class="rk">1</td>
+          <td><b class="code">B1</b> Mỹ / Hạnh</td>
+          <td class="num">4</td>
+          <td class="num">0</td>
+          <td class="num">8–0</td>
+          <td class="num">+8</td>
+          <td class="badge">ĐI TIẾP</td>
+        </tr>
+        <tr class="advance">
+          <td class="rk">2</td>
+          <td><b class="code">B2</b> Quân / Minh</td>
+          <td class="num">2</td>
+          <td class="num">2</td>
+          <td class="num">4–6</td>
+          <td class="num">-2</td>
+          <td class="badge">ĐI TIẾP</td>
+        </tr>
+        <tr class="out">
+          <td class="rk">3</td>
+          <td><b class="code">B3</b> Bảo Vinh / Nghĩa</td>
+          <td class="num">2</td>
+          <td class="num">2</td>
+          <td class="num">5–4</td>
+          <td class="num">+1</td>
+          <td class="badge"></td>
+        </tr>
+        <tr class="out">
+          <td class="rk">4</td>
+          <td><b class="code">B4</b> Hồng Nam / Bạch</td>
+          <td class="num">1</td>
+          <td class="num">3</td>
+          <td class="num">3–6</td>
+          <td class="num">-3</td>
+          <td class="badge"></td>
+        </tr>
+        <tr class="out">
+          <td class="rk">5</td>
+          <td><b class="code">B5</b> Giang / Bá Sơn</td>
+          <td class="num">1</td>
+          <td class="num">3</td>
+          <td class="num">2–6</td>
+          <td class="num">-4</td>
+          <td class="badge"></td>
+        </tr></tbody>
+      </table>
+    </section>
+    <section class="grp" style="--tone:#B45309;--tone-soft:#FBEFE0">
+      <header class="grp-h">
+        <span class="letter">C</span>
+        <div>
+          <h2>Bảng C — Phân định 3 cặp ở hạng nhất / nhì / ba</h2>
+          <p class="dim">Bàn 3 · 10 trận · BO3 thắng 2 ván · mã trận dm21–dm30</p>
+        </div>
+      </header>
+
+      <p class="why"><b>Kịch bản này thử gì:</b> C1, C2, C3 cùng 3 trận thắng và thắng vòng tròn lẫn nhau (C1 thắng C2, C2 thắng C3, C3 thắng C1). Không dùng đối đầu được vì ai cũng thắng một trận — hệ thống phải lập bảng con chỉ tính ba trận giữa họ, rồi so hiệu số trong bảng con.</p>
+
+      <table class="matches">
+        <thead>
+          <tr><th></th><th>Trận</th><th>Giờ</th><th>Cặp 1</th><th></th><th>Cặp 2</th><th>Tỉ số từng ván</th><th>Ván</th></tr>
+        </thead>
+        <tbody>
+        <tr>
+          <td class="tick"><span class="box"></span></td>
+          <td class="no">1</td>
+          <td class="meta">13:00<br><span class="dim">Bàn 3</span></td>
+          <td class="side"><b class="code">C1</b> Cường (nhỏ) / Quang Vinh</td>
+          <td class="vs">–</td>
+          <td class="side"><b class="code">C2</b> Thi / Dũng (AP)</td>
+          <td class="score">11-8   11-6</td>
+          <td class="res">2-0</td>
+        </tr>
+        <tr>
+          <td class="tick"><span class="box"></span></td>
+          <td class="no">2</td>
+          <td class="meta">13:15<br><span class="dim">Bàn 3</span></td>
+          <td class="side"><b class="code">C3</b> Sang / Tiến</td>
+          <td class="vs">–</td>
+          <td class="side"><b class="code">C4</b> Hoàng / Hưởng</td>
+          <td class="score">11-8   11-6</td>
+          <td class="res">2-0</td>
+        </tr>
+        <tr>
+          <td class="tick"><span class="box"></span></td>
+          <td class="no">3</td>
+          <td class="meta">13:30<br><span class="dim">Bàn 3</span></td>
+          <td class="side"><b class="code">C1</b> Cường (nhỏ) / Quang Vinh</td>
+          <td class="vs">–</td>
+          <td class="side"><b class="code">C5</b> Dân / Nga</td>
+          <td class="score">11-8   11-6</td>
+          <td class="res">2-0</td>
+        </tr>
+        <tr>
+          <td class="tick"><span class="box"></span></td>
+          <td class="no">4</td>
+          <td class="meta">13:45<br><span class="dim">Bàn 3</span></td>
+          <td class="side"><b class="code">C2</b> Thi / Dũng (AP)</td>
+          <td class="vs">–</td>
+          <td class="side"><b class="code">C3</b> Sang / Tiến</td>
+          <td class="score">11-9   9-11   11-7</td>
+          <td class="res">2-1</td>
+        </tr>
+        <tr>
+          <td class="tick"><span class="box"></span></td>
+          <td class="no">5</td>
+          <td class="meta">14:00<br><span class="dim">Bàn 3</span></td>
+          <td class="side"><b class="code">C4</b> Hoàng / Hưởng</td>
+          <td class="vs">–</td>
+          <td class="side"><b class="code">C5</b> Dân / Nga</td>
+          <td class="score">11-8   11-6</td>
+          <td class="res">2-0</td>
+        </tr>
+        <tr>
+          <td class="tick"><span class="box"></span></td>
+          <td class="no">6</td>
+          <td class="meta">14:15<br><span class="dim">Bàn 3</span></td>
+          <td class="side"><b class="code">C1</b> Cường (nhỏ) / Quang Vinh</td>
+          <td class="vs">–</td>
+          <td class="side"><b class="code">C3</b> Sang / Tiến</td>
+          <td class="score">8-11   6-11</td>
+          <td class="res">0-2</td>
+        </tr>
+        <tr>
+          <td class="tick"><span class="box"></span></td>
+          <td class="no">7</td>
+          <td class="meta">14:30<br><span class="dim">Bàn 3</span></td>
+          <td class="side"><b class="code">C2</b> Thi / Dũng (AP)</td>
+          <td class="vs">–</td>
+          <td class="side"><b class="code">C4</b> Hoàng / Hưởng</td>
+          <td class="score">11-8   11-6</td>
+          <td class="res">2-0</td>
+        </tr>
+        <tr>
+          <td class="tick"><span class="box"></span></td>
+          <td class="no">8</td>
+          <td class="meta">14:45<br><span class="dim">Bàn 3</span></td>
+          <td class="side"><b class="code">C3</b> Sang / Tiến</td>
+          <td class="vs">–</td>
+          <td class="side"><b class="code">C5</b> Dân / Nga</td>
+          <td class="score">11-8   11-6</td>
+          <td class="res">2-0</td>
+        </tr>
+        <tr>
+          <td class="tick"><span class="box"></span></td>
+          <td class="no">9</td>
+          <td class="meta">15:00<br><span class="dim">Bàn 3</span></td>
+          <td class="side"><b class="code">C1</b> Cường (nhỏ) / Quang Vinh</td>
+          <td class="vs">–</td>
+          <td class="side"><b class="code">C4</b> Hoàng / Hưởng</td>
+          <td class="score">11-8   11-6</td>
+          <td class="res">2-0</td>
+        </tr>
+        <tr>
+          <td class="tick"><span class="box"></span></td>
+          <td class="no">10</td>
+          <td class="meta">15:15<br><span class="dim">Bàn 3</span></td>
+          <td class="side"><b class="code">C2</b> Thi / Dũng (AP)</td>
+          <td class="vs">–</td>
+          <td class="side"><b class="code">C5</b> Dân / Nga</td>
+          <td class="score">11-8   11-6</td>
+          <td class="res">2-0</td>
+        </tr></tbody>
+      </table>
+
+      <h3>Nhập xong phải ra đúng như thế này</h3>
+      <p class="expect">C3 nhất · C1 nhì · C2 ba. Thứ tự do hiệu số bảng con: C3 +1, C1 0, C2 −1.</p>
+      <table class="stand">
+        <thead>
+          <tr><th>Hạng</th><th>Cặp</th><th>T</th><th>B</th><th>Ván</th><th>HS</th><th></th></tr>
+        </thead>
+        <tbody>
+        <tr class="advance">
+          <td class="rk">1</td>
+          <td><b class="code">C3</b> Sang / Tiến</td>
+          <td class="num">3</td>
+          <td class="num">1</td>
+          <td class="num">7–2</td>
+          <td class="num">+5</td>
+          <td class="badge">ĐI TIẾP</td>
+        </tr>
+        <tr class="advance">
+          <td class="rk">2</td>
+          <td><b class="code">C1</b> Cường (nhỏ) / Quang Vinh</td>
+          <td class="num">3</td>
+          <td class="num">1</td>
+          <td class="num">6–2</td>
+          <td class="num">+4</td>
+          <td class="badge">ĐI TIẾP</td>
+        </tr>
+        <tr class="out">
+          <td class="rk">3</td>
+          <td><b class="code">C2</b> Thi / Dũng (AP)</td>
+          <td class="num">3</td>
+          <td class="num">1</td>
+          <td class="num">6–3</td>
+          <td class="num">+3</td>
+          <td class="badge"></td>
+        </tr>
+        <tr class="out">
+          <td class="rk">4</td>
+          <td><b class="code">C4</b> Hoàng / Hưởng</td>
+          <td class="num">1</td>
+          <td class="num">3</td>
+          <td class="num">2–6</td>
+          <td class="num">-4</td>
+          <td class="badge"></td>
+        </tr>
+        <tr class="out">
+          <td class="rk">5</td>
+          <td><b class="code">C5</b> Dân / Nga</td>
+          <td class="num">0</td>
+          <td class="num">4</td>
+          <td class="num">0–8</td>
+          <td class="num">-8</td>
+          <td class="badge"></td>
+        </tr></tbody>
+      </table>
+    </section>
+    <section class="grp" style="--tone:#BE123C;--tone-soft:#FCE8EC">
+      <header class="grp-h">
+        <span class="letter">D</span>
+        <div>
+          <h2>Bảng D — Phân định 5 cặp — không phân định được</h2>
+          <p class="dim">Bàn 4 · 10 trận · BO3 thắng 2 ván · mã trận dm31–dm40</p>
+        </div>
+      </header>
+
+      <p class="why"><b>Kịch bản này thử gì:</b> Cả 5 cặp cùng 2 trận thắng, thắng vòng tròn khép kín, mọi chỉ số bằng nhau tuyệt đối. Đây là ca cực đoan nhất có thể xảy ra ở bảng 5 cặp (đúng 4 cặp bằng điểm là bất khả thi về mặt toán học).</p>
+
+      <table class="matches">
+        <thead>
+          <tr><th></th><th>Trận</th><th>Giờ</th><th>Cặp 1</th><th></th><th>Cặp 2</th><th>Tỉ số từng ván</th><th>Ván</th></tr>
+        </thead>
+        <tbody>
+        <tr>
+          <td class="tick"><span class="box"></span></td>
+          <td class="no">1</td>
+          <td class="meta">13:00<br><span class="dim">Bàn 4</span></td>
+          <td class="side"><b class="code">D1</b> Hoài Nam / Tuyền</td>
+          <td class="vs">–</td>
+          <td class="side"><b class="code">D2</b> Chung / Tuấn Anh</td>
+          <td class="score">11-8   11-6</td>
+          <td class="res">2-0</td>
+        </tr>
+        <tr>
+          <td class="tick"><span class="box"></span></td>
+          <td class="no">2</td>
+          <td class="meta">13:15<br><span class="dim">Bàn 4</span></td>
+          <td class="side"><b class="code">D3</b> Hoà / Quý</td>
+          <td class="vs">–</td>
+          <td class="side"><b class="code">D4</b> Sĩ / Hùng</td>
+          <td class="score">11-8   11-6</td>
+          <td class="res">2-0</td>
+        </tr>
+        <tr>
+          <td class="tick"><span class="box"></span></td>
+          <td class="no">3</td>
+          <td class="meta">13:30<br><span class="dim">Bàn 4</span></td>
+          <td class="side"><b class="code">D1</b> Hoài Nam / Tuyền</td>
+          <td class="vs">–</td>
+          <td class="side"><b class="code">D5</b> Sinh / Phúc</td>
+          <td class="score">8-11   6-11</td>
+          <td class="res">0-2</td>
+        </tr>
+        <tr>
+          <td class="tick"><span class="box"></span></td>
+          <td class="no">4</td>
+          <td class="meta">13:45<br><span class="dim">Bàn 4</span></td>
+          <td class="side"><b class="code">D2</b> Chung / Tuấn Anh</td>
+          <td class="vs">–</td>
+          <td class="side"><b class="code">D3</b> Hoà / Quý</td>
+          <td class="score">11-8   11-6</td>
+          <td class="res">2-0</td>
+        </tr>
+        <tr>
+          <td class="tick"><span class="box"></span></td>
+          <td class="no">5</td>
+          <td class="meta">14:00<br><span class="dim">Bàn 4</span></td>
+          <td class="side"><b class="code">D4</b> Sĩ / Hùng</td>
+          <td class="vs">–</td>
+          <td class="side"><b class="code">D5</b> Sinh / Phúc</td>
+          <td class="score">11-8   11-6</td>
+          <td class="res">2-0</td>
+        </tr>
+        <tr>
+          <td class="tick"><span class="box"></span></td>
+          <td class="no">6</td>
+          <td class="meta">14:15<br><span class="dim">Bàn 4</span></td>
+          <td class="side"><b class="code">D1</b> Hoài Nam / Tuyền</td>
+          <td class="vs">–</td>
+          <td class="side"><b class="code">D3</b> Hoà / Quý</td>
+          <td class="score">11-8   11-6</td>
+          <td class="res">2-0</td>
+        </tr>
+        <tr>
+          <td class="tick"><span class="box"></span></td>
+          <td class="no">7</td>
+          <td class="meta">14:30<br><span class="dim">Bàn 4</span></td>
+          <td class="side"><b class="code">D2</b> Chung / Tuấn Anh</td>
+          <td class="vs">–</td>
+          <td class="side"><b class="code">D4</b> Sĩ / Hùng</td>
+          <td class="score">11-8   11-6</td>
+          <td class="res">2-0</td>
+        </tr>
+        <tr>
+          <td class="tick"><span class="box"></span></td>
+          <td class="no">8</td>
+          <td class="meta">14:45<br><span class="dim">Bàn 4</span></td>
+          <td class="side"><b class="code">D3</b> Hoà / Quý</td>
+          <td class="vs">–</td>
+          <td class="side"><b class="code">D5</b> Sinh / Phúc</td>
+          <td class="score">11-8   11-6</td>
+          <td class="res">2-0</td>
+        </tr>
+        <tr>
+          <td class="tick"><span class="box"></span></td>
+          <td class="no">9</td>
+          <td class="meta">15:00<br><span class="dim">Bàn 4</span></td>
+          <td class="side"><b class="code">D1</b> Hoài Nam / Tuyền</td>
+          <td class="vs">–</td>
+          <td class="side"><b class="code">D4</b> Sĩ / Hùng</td>
+          <td class="score">8-11   6-11</td>
+          <td class="res">0-2</td>
+        </tr>
+        <tr>
+          <td class="tick"><span class="box"></span></td>
+          <td class="no">10</td>
+          <td class="meta">15:15<br><span class="dim">Bàn 4</span></td>
+          <td class="side"><b class="code">D2</b> Chung / Tuấn Anh</td>
+          <td class="vs">–</td>
+          <td class="side"><b class="code">D5</b> Sinh / Phúc</td>
+          <td class="score">8-11   6-11</td>
+          <td class="res">0-2</td>
+        </tr></tbody>
+      </table>
+
+      <h3>Nhập xong phải ra đúng như thế này</h3>
+      <p class="expect">Cả 5 đồng hạng 1, KHÔNG cặp nào được nhãn ĐI TIẾP. Tất cả gắn nhãn BỐC THĂM kèm khối cảnh báo màu hổ phách.</p>
+      <table class="stand">
+        <thead>
+          <tr><th>Hạng</th><th>Cặp</th><th>T</th><th>B</th><th>Ván</th><th>HS</th><th></th></tr>
+        </thead>
+        <tbody>
+        <tr class="drawLots">
+          <td class="rk">1</td>
+          <td><b class="code">D1</b> Hoài Nam / Tuyền</td>
+          <td class="num">2</td>
+          <td class="num">2</td>
+          <td class="num">4–4</td>
+          <td class="num">0</td>
+          <td class="badge">BỐC THĂM</td>
+        </tr>
+        <tr class="drawLots">
+          <td class="rk">1</td>
+          <td><b class="code">D2</b> Chung / Tuấn Anh</td>
+          <td class="num">2</td>
+          <td class="num">2</td>
+          <td class="num">4–4</td>
+          <td class="num">0</td>
+          <td class="badge">BỐC THĂM</td>
+        </tr>
+        <tr class="drawLots">
+          <td class="rk">1</td>
+          <td><b class="code">D3</b> Hoà / Quý</td>
+          <td class="num">2</td>
+          <td class="num">2</td>
+          <td class="num">4–4</td>
+          <td class="num">0</td>
+          <td class="badge">BỐC THĂM</td>
+        </tr>
+        <tr class="drawLots">
+          <td class="rk">1</td>
+          <td><b class="code">D4</b> Sĩ / Hùng</td>
+          <td class="num">2</td>
+          <td class="num">2</td>
+          <td class="num">4–4</td>
+          <td class="num">0</td>
+          <td class="badge">BỐC THĂM</td>
+        </tr>
+        <tr class="drawLots">
+          <td class="rk">1</td>
+          <td><b class="code">D5</b> Sinh / Phúc</td>
+          <td class="num">2</td>
+          <td class="num">2</td>
+          <td class="num">4–4</td>
+          <td class="num">0</td>
+          <td class="badge">BỐC THĂM</td>
+        </tr></tbody>
+      </table>
+    </section>
+
+  <p class="tail">Tỉ số từng ván đọc theo chiều <b>Cặp 1 – Cặp 2</b>. Cột <b>Ván</b> là kết quả
+    số ván thắng, hệ thống tự tính nên không phải nhập. Kỳ vọng ở mỗi bảng đã được kiểm bằng
+    chính hàm xếp hạng của hệ thống trước khi in ra file này.</p>
+</div>
