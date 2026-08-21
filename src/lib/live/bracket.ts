@@ -2,6 +2,54 @@ import type { DoublesKoResolved, KoRound } from "@/lib/schemas/knockout";
 
 const ROUND_ORDER: KoRound[] = ["qf", "sf", "f"];
 
+/** Trận đã có kết quả — thắng do bỏ cuộc cũng tính. */
+function decided(m: DoublesKoResolved): boolean {
+  return m.status === "done" || m.status === "forfeit";
+}
+
+/** Cặp thua của một trận đã phân định. */
+function loserLabel(m: DoublesKoResolved): string | null {
+  const winnerId = m.winner?.id;
+  if (!winnerId) return null;
+  const loser = m.entryA?.id === winnerId ? m.entryB : m.entryA;
+  return loser?.label ?? null;
+}
+
+export type FinalRanking = {
+  champion: string;
+  runnerUp: string | null;
+  /** Hai cặp thua bán kết — điều lệ §2.3 cho đồng hạng Ba, không đánh tranh hạng 3. */
+  thirds: string[];
+};
+
+/**
+ * Thứ hạng chung cuộc, hoặc null khi chung kết chưa phân định.
+ *
+ * Gộp về một chỗ vì logic này đang bị chép ở `_ContentHome.tsx` và
+ * `_publicKnockout.tsx` — ba bản chép rời là ba cơ hội lệch nhau.
+ */
+export function finalRanking(
+  matches: readonly DoublesKoResolved[],
+): FinalRanking | null {
+  const final = matches.find((m) => m.round === "f");
+  if (!final || !decided(final) || !final.winner) return null;
+
+  const winnerId = final.winner.id;
+  const runnerUp =
+    final.entryA?.id === winnerId ? final.entryB : final.entryA;
+
+  const thirds = matches
+    .filter((m) => m.round === "sf" && decided(m))
+    .map(loserLabel)
+    .filter((name): name is string => name !== null);
+
+  return {
+    champion: final.winner.label,
+    runnerUp: runnerUp?.label ?? null,
+    thirds,
+  };
+}
+
 /**
  * Sắp một cột theo thứ tự các trận mà nó nạp vào: với mỗi trận ở cột kế tiếp,
  * lấy trận rót vào ô "a" rồi tới ô "b". Trận không nối vào đâu xếp cuối.

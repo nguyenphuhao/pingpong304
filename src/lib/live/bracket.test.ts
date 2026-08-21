@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { orderForBracket } from "./bracket";
+import { orderForBracket, finalRanking } from "./bracket";
 import type { DoublesKoResolved } from "@/lib/schemas/knockout";
 
 type Wire = {
@@ -92,5 +92,64 @@ describe("orderForBracket", () => {
     const flat = orderForBracket(BRACKET).flat();
     expect(flat).toHaveLength(BRACKET.length);
     expect(new Set(flat.map((m) => m.id)).size).toBe(BRACKET.length);
+  });
+});
+
+// ── finalRanking ──
+
+type Side = { id: string; label: string } | null;
+
+function koResult(
+  id: string,
+  round: "qf" | "sf" | "f",
+  a: Side,
+  b: Side,
+  winnerId: string | null,
+  status: "scheduled" | "done" | "forfeit" | "live" = "done",
+): DoublesKoResolved {
+  const base = ko({ id, round });
+  const winner = [a, b].find((s) => s?.id === winnerId) ?? null;
+  return { ...base, entryA: a, entryB: b, winner, status };
+}
+
+const P = (id: string, label: string) => ({ id, label });
+
+describe("finalRanking", () => {
+  const sf1 = koResult("sf1", "sf", P("A3", "H'Lim / Phương"), P("C1", "Cường / Vinh"), "A3");
+  const sf2 = koResult("sf2", "sf", P("B2", "Quân / Minh"), P("D4", "Sĩ / Hùng"), "D4");
+
+  test("chung kết chưa đấu thì chưa có thứ hạng", () => {
+    const f = koResult("f", "f", null, null, null, "scheduled");
+    expect(finalRanking([sf1, sf2, f])).toBeNull();
+  });
+
+  test("vô địch là cặp thắng chung kết, á quân là cặp còn lại", () => {
+    const f = koResult("f", "f", P("A3", "H'Lim / Phương"), P("D4", "Sĩ / Hùng"), "A3");
+    const r = finalRanking([sf1, sf2, f]);
+    expect(r?.champion).toBe("H'Lim / Phương");
+    expect(r?.runnerUp).toBe("Sĩ / Hùng");
+  });
+
+  test("hai cặp thua bán kết đồng hạng ba", () => {
+    const f = koResult("f", "f", P("A3", "H'Lim / Phương"), P("D4", "Sĩ / Hùng"), "A3");
+    expect(finalRanking([sf1, sf2, f])?.thirds).toEqual([
+      "Cường / Vinh",
+      "Quân / Minh",
+    ]);
+  });
+
+  test("bán kết chưa xong thì chưa tính vào hạng ba", () => {
+    const pending = koResult("sf2", "sf", P("B2", "Quân / Minh"), P("D4", "Sĩ / Hùng"), null, "live");
+    const f = koResult("f", "f", P("A3", "H'Lim / Phương"), P("D4", "Sĩ / Hùng"), "A3");
+    expect(finalRanking([sf1, pending, f])?.thirds).toEqual(["Cường / Vinh"]);
+  });
+
+  test("thắng do bỏ cuộc vẫn tính là đã phân định", () => {
+    const f = koResult("f", "f", P("A3", "H'Lim / Phương"), P("D4", "Sĩ / Hùng"), "A3", "forfeit");
+    expect(finalRanking([sf1, sf2, f])?.champion).toBe("H'Lim / Phương");
+  });
+
+  test("không có trận chung kết thì trả null", () => {
+    expect(finalRanking([sf1, sf2])).toBeNull();
   });
 });
