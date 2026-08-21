@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState } from "react";
 import {
+  DEFAULT_FONT_SIZE,
   FONT_SIZE_ATTR,
   parseFontSize,
   writeFontSize,
@@ -17,10 +18,10 @@ const Ctx = createContext<FontSizeCtx | null>(null);
 
 export function FontSizeProvider({ children }: { children: React.ReactNode }) {
   // Seed from DOM on client (PreferencesScript has already run in <head>).
-  // On SSR, document is undefined; fall back to "base" — consumers that render
-  // only on the client will re-resolve after mount.
+  // On SSR, document is undefined; fall back to DEFAULT_FONT_SIZE — consumers
+  // that render only on the client will re-resolve after mount.
   const [size, setSizeState] = useState<FontSize>(() => {
-    if (typeof document === "undefined") return "base";
+    if (typeof document === "undefined") return DEFAULT_FONT_SIZE;
     return parseFontSize(document.documentElement.getAttribute(FONT_SIZE_ATTR));
   });
 

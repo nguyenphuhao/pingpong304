@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Be_Vietnam_Pro } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
+import { TOURNAMENT } from "@/lib/tournament";
 import { BottomNav } from "./_BottomNav";
 import { OnboardingDialog } from "./_OnboardingDialog";
 import { Providers } from "./_Providers";
@@ -14,25 +15,26 @@ const fontSans = Be_Vietnam_Pro({
   variable: "--font-sans",
 });
 
+const SITE_URL = "https://bbbt.playnika.com";
+const TITLE = `${TOURNAMENT.club} — ${TOURNAMENT.shortName}`;
+const DESCRIPTION = `${TOURNAMENT.name}. Nội dung ${TOURNAMENT.event}, ${TOURNAMENT.dateLabel} tại ${TOURNAMENT.venue}. Xem lịch thi đấu, sơ đồ loại trực tiếp và bảng xếp hạng.`;
+
 export const metadata: Metadata = {
-  title: "CLB Bóng Bàn Bình Tân — Giải Kỷ niệm 51 năm Thống nhất",
-  description:
-    "Giải bóng bàn chào mừng kỷ niệm 51 năm ngày thống nhất đất nước (30/4/1975 – 30/4/2026). Nội dung Đồng đội & Đôi. Xem lịch thi đấu, BXH, kết quả trực tiếp.",
-  metadataBase: new URL("https://bbbt.playnika.com"),
+  title: TITLE,
+  description: DESCRIPTION,
+  metadataBase: new URL(SITE_URL),
   openGraph: {
-    title: "CLB Bóng Bàn Bình Tân — Giải 51 năm Thống nhất",
-    description:
-      "Giải bóng bàn chào mừng 51 năm ngày thống nhất đất nước. Lịch thi đấu, BXH, kết quả trực tiếp.",
-    url: "https://bbbt.playnika.com",
-    siteName: "CLB Bóng Bàn Bình Tân",
+    title: TITLE,
+    description: DESCRIPTION,
+    url: SITE_URL,
+    siteName: TOURNAMENT.club,
     locale: "vi_VN",
     type: "website",
   },
   twitter: {
     card: "summary",
-    title: "CLB Bóng Bàn Bình Tân — Giải 51 năm Thống nhất",
-    description:
-      "Xem lịch thi đấu, BXH, kết quả trực tiếp giải bóng bàn kỷ niệm 51 năm thống nhất.",
+    title: TITLE,
+    description: DESCRIPTION,
   },
 };
 

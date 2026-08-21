@@ -70,8 +70,10 @@ html[data-font-size="lg"] {
 html[data-font-size="xl"] {
   font-size: 21px;
 }
+/* Chưa có lựa chọn nào: dùng mức "lg". Phải khớp DEFAULT_FONT_SIZE trong
+   src/lib/preferences.ts — CSS không import được hằng số TypeScript. */
 html:not([data-font-size]) {
-  font-size: 17px;
+  font-size: 19px;
 }
 
 .dark {

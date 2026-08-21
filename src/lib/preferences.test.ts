@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest";
 import {
   FONT_SIZE_LEVELS,
+  DEFAULT_FONT_SIZE,
   FONT_SIZE_STORAGE_KEY,
   ONBOARDED_STORAGE_KEY,
   isOnboarded,
@@ -44,12 +45,18 @@ describe("parseFontSize", () => {
     }
   });
 
-  test("returns 'base' for invalid input", () => {
-    expect(parseFontSize("huge")).toBe("base");
-    expect(parseFontSize(null)).toBe("base");
-    expect(parseFontSize(undefined)).toBe("base");
-    expect(parseFontSize(17)).toBe("base");
-    expect(parseFontSize("")).toBe("base");
+  test("falls back to the default for invalid input", () => {
+    expect(parseFontSize("huge")).toBe(DEFAULT_FONT_SIZE);
+    expect(parseFontSize(null)).toBe(DEFAULT_FONT_SIZE);
+    expect(parseFontSize(undefined)).toBe(DEFAULT_FONT_SIZE);
+    expect(parseFontSize(17)).toBe(DEFAULT_FONT_SIZE);
+    expect(parseFontSize("")).toBe(DEFAULT_FONT_SIZE);
+  });
+
+  // Người xem chính của giải trên 50 tuổi, xem trên điện thoại trong nhà thi
+  // đấu. Mặc định phải là mức lớn, không phải mức vừa.
+  test("default is the large level, not the middle one", () => {
+    expect(DEFAULT_FONT_SIZE).toBe("lg");
   });
 });
 
@@ -60,7 +67,7 @@ describe("readFontSize", () => {
   });
 
   test("returns 'base' when key missing", () => {
-    expect(readFontSize(makeStorage())).toBe("base");
+    expect(readFontSize(makeStorage())).toBe(DEFAULT_FONT_SIZE);
   });
 
   test("returns 'base' when storage throws", () => {
@@ -71,7 +78,7 @@ describe("readFontSize", () => {
       setItem: () => {},
       removeItem: () => {},
     };
-    expect(readFontSize(storage)).toBe("base");
+    expect(readFontSize(storage)).toBe(DEFAULT_FONT_SIZE);
   });
 });
 
