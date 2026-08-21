@@ -21,13 +21,18 @@ export function LiveTopBar() {
         {/*
           alt rỗng vì tên CLB nằm ngay bên cạnh — đọc màn hình mà đọc cả hai là
           lặp. priority vì logo nằm ngay đầu trang, không nên tải trễ.
+
+          unoptimized: Next không tối ưu SVG theo mặc định (SVG chứa được script
+          nên là bề mặt tấn công). Bỏ qua hẳn bộ tối ưu thay vì bật
+          dangerouslyAllowSVG — ảnh vector vốn không có gì để nén thêm.
         */}
         <Image
-          src="/logo-clb.png"
+          src="/logo-clb.svg"
           alt=""
           width={44}
           height={44}
           priority
+          unoptimized
           className="size-11 shrink-0"
         />
 
