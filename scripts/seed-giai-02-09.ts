@@ -32,6 +32,16 @@ const PLAYERS = [
  */
 const FEMALE_IDS = new Set(["VD06", "VD08", "VD32"]);
 
+/**
+ * CLB của VĐV, theo mã VD. Danh sách BTC không có cột này nên phần lớn để trống —
+ * chỉ điền những người đã được xác nhận, không suy đoán.
+ *
+ * Ghi ở đây để seed lại không xoá mất thông tin BTC đã nhập tay qua admin.
+ */
+const CLUB_OF: Record<string, string> = {
+  VD30: "CLB Bình Tân",
+};
+
 const GROUP_LETTERS = ["A", "B", "C", "D"] as const;
 
 /** Bảng nào chạy bàn nào — tờ lịch 21/08. */
@@ -76,13 +86,13 @@ function buildStatements(): { sql: string[]; counts: Record<string, number> } {
     "",
   );
 
-  // 40 VĐV. phone/club để null — danh sách BTC không có, không tự bịa.
+  // 40 VĐV. phone để null; club chỉ điền người đã xác nhận (CLUB_OF).
   sql.push("-- doubles_players");
   PLAYERS.forEach((name, i) => {
     const id = playerId(i);
     const gender = FEMALE_IDS.has(id) ? "F" : "M";
     sql.push(
-      `INSERT INTO doubles_players (id, name, phone, gender, club) VALUES (${str(id)}, ${str(name)}, null, ${str(gender)}, null);`,
+      `INSERT INTO doubles_players (id, name, phone, gender, club) VALUES (${str(id)}, ${str(name)}, null, ${str(gender)}, ${str(CLUB_OF[id] ?? null)});`,
     );
   });
   counts.players = PLAYERS.length;
