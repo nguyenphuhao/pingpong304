@@ -32,7 +32,8 @@ export const metadata: Metadata = {
     type: "website",
   },
   twitter: {
-    card: "summary",
+    // Ảnh chia sẻ là 1200×630 ngang; "summary" sẽ cắt về ô vuông nhỏ.
+    card: "summary_large_image",
     title: TITLE,
     description: DESCRIPTION,
   },
