@@ -22,7 +22,7 @@ export const findEntityTool = tool({
       .map((p) => ({
         type: "pair" as const,
         id: p.id,
-        label: `${p.p1.name} – ${p.p2.name}`,
+        label: `${p.p1.name} / ${p.p2.name}`,
         matchedOn: p.p1.name.toLowerCase().includes(q) ? p.p1.name : p.p2.name,
       }));
 

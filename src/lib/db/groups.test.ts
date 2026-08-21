@@ -29,7 +29,7 @@ const PAIRS = [
 ];
 
 describe("fetchDoublesGroups", () => {
-  test("resolves entries IDs to 'p1name – p2name' labels", async () => {
+  test("resolves entries IDs to 'p1name / p2name' labels", async () => {
     vi.mocked(fetchPairs).mockResolvedValue(PAIRS);
     const groups = [
       { id: "gA", name: "Bảng A", entries: ["p01", "p04"] },
@@ -45,8 +45,8 @@ describe("fetchDoublesGroups", () => {
         id: "gA",
         name: "Bảng A",
         entries: [
-          { id: "p01", label: "Minh Quân – Tân Sinh" },
-          { id: "p04", label: "Hoài Nam – Phi Hùng" },
+          { id: "p01", label: "Minh Quân / Tân Sinh" },
+          { id: "p04", label: "Hoài Nam / Phi Hùng" },
         ],
       },
     ]);
@@ -104,7 +104,7 @@ describe("fetchDoublesGroupById", () => {
     expect(out).toEqual({
       id: "gA",
       name: "Bảng A",
-      entries: [{ id: "p01", label: "Minh Quân – Tân Sinh" }],
+      entries: [{ id: "p01", label: "Minh Quân / Tân Sinh" }],
     });
   });
 

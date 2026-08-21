@@ -62,8 +62,8 @@ describe("fetchDoublesMatchesByGroup", () => {
 
     const r = await fetchDoublesMatchesByGroup("gA");
     expect(r).toHaveLength(1);
-    expect(r[0].pairA).toEqual({ id: "p01", label: "A – B" });
-    expect(r[0].pairB).toEqual({ id: "p02", label: "C – D" });
+    expect(r[0].pairA).toEqual({ id: "p01", label: "A / B" });
+    expect(r[0].pairB).toEqual({ id: "p02", label: "C / D" });
     expect(r[0].setsA).toBe(0);
     expect(r[0].winner).toBeNull();
   });
@@ -136,7 +136,7 @@ describe("fetchDoublesMatchesByGroup", () => {
       .mockReturnValueOnce(pairsChain as never);
 
     const r = await fetchDoublesMatchesByGroup("gA");
-    expect(r[0].winner).toEqual({ id: "p01", label: "A – B" });
+    expect(r[0].winner).toEqual({ id: "p01", label: "A / B" });
     expect(r[0].table).toBe(3);
   });
 
@@ -256,7 +256,7 @@ describe("fetchLiveDoubles", () => {
     const r = await fetchLiveDoubles();
     expect(r).toHaveLength(1);
     expect(r[0].status).toBe("live");
-    expect(r[0].pairA.label).toBe("A – B");
+    expect(r[0].pairA.label).toBe("A / B");
   });
 });
 

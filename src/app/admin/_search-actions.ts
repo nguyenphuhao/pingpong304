@@ -47,7 +47,7 @@ async function fetchDoublesIndex(): Promise<MatchIndexItem[]> {
         p1: { name: string };
         p2: { name: string };
       }>
-    ).map((p) => [p.id, `${p.p1.name} – ${p.p2.name}`]),
+    ).map((p) => [p.id, `${p.p1.name} / ${p.p2.name}`]),
   );
 
   return ((matchesResp.data ?? []) as DoublesRow[]).map((r) => ({

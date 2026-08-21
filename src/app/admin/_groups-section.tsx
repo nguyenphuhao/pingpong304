@@ -69,7 +69,7 @@ export function GroupsSection({
     kind === "doubles"
       ? (pairs ?? []).map((p) => ({
           id: p.id,
-          label: `${p.p1.name} – ${p.p2.name}`,
+          label: `${p.p1.name} / ${p.p2.name}`,
         }))
       : (teams ?? []).map((t) => ({ id: t.id, label: t.name }));
 

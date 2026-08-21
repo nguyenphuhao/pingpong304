@@ -58,7 +58,7 @@ async function buildPairLabelMap(): Promise<Map<string, string>> {
     p1: { id: string; name: string };
     p2: { id: string; name: string };
   }>;
-  return new Map(rows.map((r) => [r.id, `${r.p1.name} – ${r.p2.name}`]));
+  return new Map(rows.map((r) => [r.id, `${r.p1.name} / ${r.p2.name}`]));
 }
 
 function resolveDoublesMatch(

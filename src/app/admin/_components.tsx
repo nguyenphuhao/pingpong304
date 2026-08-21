@@ -2709,7 +2709,7 @@ function KoMatchCard({
   const canEditSlots = isFirstRound && match.status === "scheduled";
 
   const entryOptions: { id: string; label: string }[] = isDoubles
-    ? (pairs ?? []).map((p) => ({ id: p.id, label: `${p.p1.name} – ${p.p2.name}` }))
+    ? (pairs ?? []).map((p) => ({ id: p.id, label: `${p.p1.name} / ${p.p2.name}` }))
     : (teams ?? []).map((t) => ({ id: t.id, label: t.name }));
 
   const currentEntryA = isDoubles

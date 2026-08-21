@@ -9,7 +9,7 @@ function buildPairLabelMap(
   pairs: Awaited<ReturnType<typeof fetchPairs>>,
 ): Map<string, string> {
   return new Map(
-    pairs.map((p) => [p.id, `${p.p1.name} – ${p.p2.name}`]),
+    pairs.map((p) => [p.id, `${p.p1.name} / ${p.p2.name}`]),
   );
 }
 

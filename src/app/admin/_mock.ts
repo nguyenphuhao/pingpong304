@@ -38,7 +38,7 @@ const PAIR_LIST = [
   { id: "p18", group: "gD", p1: "Văn Hạnh (Per)", p2: "Hlim (Per)" },
 ];
 
-const pairLabel = (p: { p1: string; p2: string }) => `${p.p1} – ${p.p2}`;
+const pairLabel = (p: { p1: string; p2: string }) => `${p.p1} / ${p.p2}`;
 
 export const MOCK_PAIRS: Pair[] = PAIR_LIST.map(({ id, p1, p2 }) => ({ id, p1, p2 }));
 
