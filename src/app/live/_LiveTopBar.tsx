@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { stepFontSize } from "@/lib/live/nav";
 import { TOURNAMENT } from "@/lib/tournament";
 import { useFontSize } from "../_FontSizeProvider";
@@ -17,6 +18,19 @@ export function LiveTopBar() {
   return (
     <header className="sticky top-0 z-40 bg-[#0E2A4E] text-white">
       <div className="mx-auto flex w-full max-w-md items-center gap-3 px-3 py-2.5 md:max-w-3xl md:px-5 lg:max-w-5xl">
+        {/*
+          alt rỗng vì tên CLB nằm ngay bên cạnh — đọc màn hình mà đọc cả hai là
+          lặp. priority vì logo nằm ngay đầu trang, không nên tải trễ.
+        */}
+        <Image
+          src="/logo-clb.png"
+          alt=""
+          width={44}
+          height={44}
+          priority
+          className="size-11 shrink-0"
+        />
+
         <div className="min-w-0 flex-1">
           <p className="text-[0.6rem] font-semibold uppercase tracking-[0.09em] text-sky-200">
             {TOURNAMENT.club}
