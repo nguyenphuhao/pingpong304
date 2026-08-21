@@ -195,3 +195,12 @@ html:not([data-font-size]) {
     letter-spacing: var(--tracking-normal);
   }
 }
+
+/* Nút chỉnh cỡ chữ ở /live: làm mờ khi đã chạm biên.
+   Bám vào data-font-size trên <html> — PreferencesScript đặt thuộc tính này
+   trước khi hydrate, nên đúng ngay khung hình đầu và không gây lệch hydrate
+   như khi cho JSX phụ thuộc giá trị chỉ client mới đọc được. */
+html[data-font-size="sm"] .fs-at-min,
+html[data-font-size="xl"] .fs-at-max {
+  opacity: 0.4;
+}

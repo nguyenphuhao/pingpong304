@@ -1,6 +1,5 @@
 "use client";
 
-import { FONT_SIZE_LEVELS } from "@/lib/preferences";
 import { stepFontSize } from "@/lib/live/nav";
 import { TOURNAMENT } from "@/lib/tournament";
 import { useFontSize } from "../_FontSizeProvider";
@@ -14,8 +13,6 @@ import { useFontSize } from "../_FontSizeProvider";
  */
 export function LiveTopBar() {
   const { size, setSize } = useFontSize();
-  const atMin = size === FONT_SIZE_LEVELS[0];
-  const atMax = size === FONT_SIZE_LEVELS[FONT_SIZE_LEVELS.length - 1];
 
   return (
     <header className="sticky top-0 z-40 bg-[#0E2A4E] text-white">
@@ -33,13 +30,13 @@ export function LiveTopBar() {
           <FontSizeButton
             label="Giảm cỡ chữ"
             text="A−"
-            disabled={atMin}
+            atLimitClass="fs-at-min"
             onClick={() => setSize(stepFontSize(size, -1))}
           />
           <FontSizeButton
             label="Tăng cỡ chữ"
             text="A+"
-            disabled={atMax}
+            atLimitClass="fs-at-max"
             onClick={() => setSize(stepFontSize(size, 1))}
           />
         </div>
@@ -48,25 +45,36 @@ export function LiveTopBar() {
   );
 }
 
+/**
+ * Trạng thái "đã chạm mức lớn/nhỏ nhất" làm mờ bằng CSS bám vào thuộc tính
+ * data-font-size trên <html>, KHÔNG bằng prop React.
+ *
+ * Lý do: FontSizeProvider trên server luôn trả "base" (không đọc được
+ * localStorage), client mới biết mức thật — cho JSX phụ thuộc giá trị đó là
+ * server và client render lệch nhau, React báo hydration mismatch. Thuộc tính
+ * kia do PreferencesScript đặt trước khi hydrate nên CSS đúng ngay từ khung
+ * hình đầu tiên.
+ *
+ * Nút không bị `disabled`: bấm ở mức biên cũng vô hại vì stepFontSize đã chặn.
+ */
 function FontSizeButton({
   label,
   text,
-  disabled,
+  atLimitClass,
   onClick,
 }: {
   label: string;
   text: string;
-  disabled: boolean;
+  atLimitClass: string;
   onClick: () => void;
 }) {
   return (
     <button
       type="button"
       aria-label={label}
-      disabled={disabled}
       onClick={onClick}
       style={{ touchAction: "manipulation" }}
-      className="flex size-11 items-center justify-center rounded-lg border border-white/30 bg-white/10 text-[0.95rem] font-bold transition-colors active:bg-white/25 disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-white"
+      className={`${atLimitClass} flex size-11 items-center justify-center rounded-lg border border-white/30 bg-white/10 text-[0.95rem] font-bold transition-colors active:bg-white/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-white`}
     >
       {text}
     </button>
