@@ -40,7 +40,7 @@ INSERT INTO doubles_players (id, name, phone, gender, club) VALUES ('VD26', 'Ti�
 INSERT INTO doubles_players (id, name, phone, gender, club) VALUES ('VD27', 'Hoàng', null, 'M', null);
 INSERT INTO doubles_players (id, name, phone, gender, club) VALUES ('VD28', 'Hưởng', null, 'M', null);
 INSERT INTO doubles_players (id, name, phone, gender, club) VALUES ('VD29', 'Dân', null, 'M', null);
-INSERT INTO doubles_players (id, name, phone, gender, club) VALUES ('VD30', 'Nga', null, 'M', null);
+INSERT INTO doubles_players (id, name, phone, gender, club) VALUES ('VD30', 'Trọng', null, 'M', null);
 INSERT INTO doubles_players (id, name, phone, gender, club) VALUES ('VD31', 'Hoài Nam', null, 'M', null);
 INSERT INTO doubles_players (id, name, phone, gender, club) VALUES ('VD32', 'Tuyền', null, 'F', null);
 INSERT INTO doubles_players (id, name, phone, gender, club) VALUES ('VD33', 'Chung', null, 'M', null);

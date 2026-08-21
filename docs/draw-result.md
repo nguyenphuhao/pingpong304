@@ -22,7 +22,7 @@
 | 13 | Quân – Minh | B-P2 |
 | 14 | Chung – Tuấn Anh | D-P2 |
 | 15 | Sĩ – Hùng | D-P4 |
-| 16 | Dân – Nga | C-P5 |
+| 16 | Dân – Trọng | C-P5 |
 | 17 | Giang – Bá Sơn | B-P5 |
 | 18 | Sang – Tiến | C-P3 |
 | 19 | Hoàng – Hưởng | C-P4 |
@@ -42,7 +42,7 @@ Bốn bảng, mỗi bảng **5 cặp**. Ký hiệu P1–P5 dùng cho lịch thi 
 | **P2** | Cường (lớn) / Hảo | Quân / Minh | Thi / Dũng (AP) | Chung / Tuấn Anh |
 | **P3** | H'Lim / Phương | Bảo Vinh / Nghĩa | Sang / Tiến | Hoà / Quý |
 | **P4** | Dũng / Phượng | Hồng Nam / Bạch | Hoàng / Hưởng | Sĩ / Hùng |
-| **P5** | Thái Sơn / Viết Tài | Giang / Bá Sơn | Dân / Nga | Sinh / Phúc |
+| **P5** | Thái Sơn / Viết Tài | Giang / Bá Sơn | Dân / Trọng | Sinh / Phúc |
 
 ## 3. Cảnh báo trùng tên khi nhập liệu
 
@@ -56,6 +56,11 @@ Tờ chia bảng viết tắt tên, dễ nhập nhầm thành cùng một ngư�
 | Sơn | Thái Sơn — Bá Sơn | A-P5 và B-P5 |
 | Dũng | Dũng — Dũng (AP) | A-P4 và C-P2 |
 | Phương / Phượng | hai người khác nhau | A-P3 và A-P4 — **cùng bảng** |
+
+**Đã sửa sau khi đối chiếu:** tờ bốc thăm viết `Nga`, thực tế VĐV tên đầy đủ là
+**Trọng** (giải 30/4 ghi là "Trọng Nga" — xem `supabase/seed.sql`). BTC xác nhận ngày
+21/08 rằng **Trọng** là đúng. Danh sách trong file này đã cập nhật; `scripts/seed-giai-02-09.ts`
+cũng vậy, nên seed lại không ghi đè nhầm.
 
 Phương và Phượng cùng nằm bảng A là rủi ro cao nhất: sai một dấu là ghi nhầm kết quả
 cho cặp khác. Nên nhập tên đầy đủ kèm phần trong ngoặc, không viết tắt.
@@ -107,14 +112,14 @@ khi mỗi bảng chạy trên một bàn cố định.
 |---|---|
 | 1 | Cường (nhỏ) / Quang Vinh  —  Thi / Dũng (AP) |
 | 2 | Sang / Tiến  —  Hoàng / Hưởng |
-| 3 | Cường (nhỏ) / Quang Vinh  —  Dân / Nga |
+| 3 | Cường (nhỏ) / Quang Vinh  —  Dân / Trọng |
 | 4 | Thi / Dũng (AP)  —  Sang / Tiến |
-| 5 | Hoàng / Hưởng  —  Dân / Nga |
+| 5 | Hoàng / Hưởng  —  Dân / Trọng |
 | 6 | Cường (nhỏ) / Quang Vinh  —  Sang / Tiến |
 | 7 | Thi / Dũng (AP)  —  Hoàng / Hưởng |
-| 8 | Sang / Tiến  —  Dân / Nga |
+| 8 | Sang / Tiến  —  Dân / Trọng |
 | 9 | Cường (nhỏ) / Quang Vinh  —  Hoàng / Hưởng |
-| 10 | Thi / Dũng (AP)  —  Dân / Nga |
+| 10 | Thi / Dũng (AP)  —  Dân / Trọng |
 
 ### Bảng D
 

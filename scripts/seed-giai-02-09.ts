@@ -22,7 +22,7 @@ import { buildDoublesBracket } from "../src/lib/knockout/seed";
 const PLAYERS = [
   "Nghiệp", "Mạnh", "Cường (lớn)", "Hảo", "H'Lim", "Phương", "Dũng", "Phượng", "Thái Sơn", "Viết Tài",
   "Mỹ", "Hạnh", "Quân", "Minh", "Bảo Vinh", "Nghĩa", "Hồng Nam", "Bạch", "Giang", "Bá Sơn",
-  "Cường (nhỏ)", "Quang Vinh", "Thi", "Dũng (AP)", "Sang", "Tiến", "Hoàng", "Hưởng", "Dân", "Nga",
+  "Cường (nhỏ)", "Quang Vinh", "Thi", "Dũng (AP)", "Sang", "Tiến", "Hoàng", "Hưởng", "Dân", "Trọng",
   "Hoài Nam", "Tuyền", "Chung", "Tuấn Anh", "Hoà", "Quý", "Sĩ", "Hùng", "Sinh", "Phúc",
 ];
 
