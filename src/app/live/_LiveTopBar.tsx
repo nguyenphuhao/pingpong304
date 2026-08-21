@@ -16,7 +16,7 @@ export function LiveTopBar() {
 
   return (
     <header className="sticky top-0 z-40 bg-[#0E2A4E] text-white">
-      <div className="mx-auto flex w-full max-w-md items-center gap-3 px-3 py-2.5">
+      <div className="mx-auto flex w-full max-w-md items-center gap-3 px-3 py-2.5 md:max-w-3xl md:px-5 lg:max-w-5xl">
         <div className="min-w-0 flex-1">
           <p className="text-[0.6rem] font-semibold uppercase tracking-[0.09em] text-sky-200">
             {TOURNAMENT.club}

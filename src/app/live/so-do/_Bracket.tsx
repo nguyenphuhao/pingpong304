@@ -1,4 +1,5 @@
 import { ArrowRight, Check } from "lucide-react";
+import { ScrollArea } from "./_ScrollArea";
 import { formatSets, statusLabel } from "@/lib/live/format";
 import { orderForBracket } from "@/lib/live/bracket";
 import { ROUND_LABEL, type KoRound } from "@/lib/schemas/knockout";
@@ -45,8 +46,15 @@ export function Bracket({ matches }: { matches: readonly DoublesKoResolved[] }) 
   }
 
   return (
-    <div className="-mx-3 border-y bg-card">
-      <div className="overflow-x-auto [scroll-snap-type:x_proximity]">
+    <div className="-mx-3 border-y bg-card md:mx-0 md:rounded-2xl md:border">
+      <ScrollArea
+        hint={
+          <p className="flex items-center justify-center gap-2 border-t bg-muted/40 py-2 text-[0.72rem] font-semibold text-muted-foreground">
+            Vuốt ngang để xem bán kết và chung kết
+            <ArrowRight aria-hidden className="size-[1.1em]" />
+          </p>
+        }
+      >
         <div className="flex min-w-max items-stretch">
           {columns.map((column, ci) => {
             const round = column[0].round;
@@ -109,12 +117,7 @@ export function Bracket({ matches }: { matches: readonly DoublesKoResolved[] }) 
             );
           })}
         </div>
-      </div>
-
-      <p className="flex items-center justify-center gap-2 border-t bg-muted/40 py-2 text-[0.72rem] font-semibold text-muted-foreground">
-        Vuốt ngang để xem bán kết và chung kết
-        <ArrowRight aria-hidden className="size-[1.1em]" />
-      </p>
+      </ScrollArea>
     </div>
   );
 }

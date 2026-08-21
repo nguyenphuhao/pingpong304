@@ -70,7 +70,7 @@ export function GroupSchedule({
       </section>
 
       <SectionLabel>Các cặp trong bảng</SectionLabel>
-      <ul className="grid grid-cols-2 gap-2">
+      <ul className="grid grid-cols-2 gap-2 md:grid-cols-3">
         {group.entries.map((entry) => (
           <li
             key={entry.id}
@@ -94,7 +94,7 @@ export function GroupSchedule({
           Bảng này chưa có lịch thi đấu.
         </p>
       ) : (
-        <div className="flex flex-col gap-2.5">
+        <div className="flex flex-col gap-2.5 md:grid md:grid-cols-2 md:gap-3">
           {matches.map((m, i) => (
             <MatchCard
               key={m.id}

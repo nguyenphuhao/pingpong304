@@ -20,7 +20,7 @@ export function LiveBottomNav() {
       <div aria-hidden className="h-[4.5rem]" />
       <nav className="fixed inset-x-0 bottom-0 z-50 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
         <div
-          className="mx-auto grid max-w-md grid-cols-3"
+          className="mx-auto grid max-w-md grid-cols-3 md:max-w-3xl lg:max-w-5xl"
           style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
         >
           {LIVE_TABS.map((tab) => {
