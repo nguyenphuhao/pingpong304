@@ -76,13 +76,13 @@ export function buildDoublesBracket(seeds: SeedEntry[], groupNames: string[]): D
     },
     {
       id: "dko-sf1", round: "sf", best_of: 5,
-      label_a: "Thắng TK 1", label_b: "Thắng TK 2",
+      label_a: "Thắng TK 1", label_b: "Thắng TK 3",
       entry_a: null, entry_b: null,
       next_match_id: "dko-f", next_slot: "a",
     },
     {
       id: "dko-sf2", round: "sf", best_of: 5,
-      label_a: "Thắng TK 3", label_b: "Thắng TK 4",
+      label_a: "Thắng TK 2", label_b: "Thắng TK 4",
       entry_a: null, entry_b: null,
       next_match_id: "dko-f", next_slot: "b",
     },

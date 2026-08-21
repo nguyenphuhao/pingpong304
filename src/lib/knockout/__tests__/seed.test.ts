@@ -57,6 +57,22 @@ describe("buildDoublesBracket", () => {
     expect(byId.get("dko-f")!.label_a).toBe("Thắng BK 1");
   });
 
+  // BK I = thắng TK1 – thắng TK3, BK II = thắng TK2 – thắng TK4 (điều lệ §2.3).
+  // Nhãn phải suy ra được từ next_match_id/next_slot, không viết tay rời rạc.
+  test("placeholder labels match the actual bracket wiring", () => {
+    const bracket = buildDoublesBracket(seeds, ["A", "B", "C", "D"]);
+    const byId = new Map(bracket.map((m) => [m.id, m]));
+    const prefix: Record<string, string> = { qf: "TK", sf: "BK" };
+
+    for (const m of bracket) {
+      if (!m.next_match_id) continue;
+      const next = byId.get(m.next_match_id)!;
+      const label = m.next_slot === "a" ? next.label_a : next.label_b;
+      const n = m.id.replace(/^dko-(qf|sf)/, "");
+      expect(label).toBe(`Thắng ${prefix[m.round]} ${n}`);
+    }
+  });
+
   test("all matches best_of 5", () => {
     for (const m of buildDoublesBracket(seeds, ["A", "B", "C", "D"])) expect(m.best_of).toBe(5);
   });
