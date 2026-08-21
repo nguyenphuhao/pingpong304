@@ -1,4 +1,5 @@
-import { GroupPills } from "../_GroupPills";
+import { GroupSwitcher } from "../_GroupSwitcher";
+import { StandingsSkeleton } from "../_Skeletons";
 import { StandingsCards } from "./_StandingsCards";
 import { groupColor } from "../../_groupColors";
 import { fetchDoublesGroups } from "@/lib/db/groups";
@@ -54,13 +55,13 @@ export default async function LiveStandingsPage({
 
   return (
     <>
-      <GroupPills
+      <GroupSwitcher
         groups={groups}
         activeId={active.id}
         progress={progress}
         basePath="/live/bxh"
-      />
-
+        skeleton={<StandingsSkeleton rows={active.entries.length} />}
+      >
       <section className={`rounded-2xl border p-3 ${c.border} ${c.bg}`}>
         <div className="flex items-center gap-2.5">
           <span
@@ -90,6 +91,7 @@ export default async function LiveStandingsPage({
         complete={complete}
         remaining={matches.length - played}
       />
+      </GroupSwitcher>
     </>
   );
 }

@@ -1,5 +1,6 @@
-import { GroupPills } from "./_GroupPills";
+import { GroupSwitcher } from "./_GroupSwitcher";
 import { GroupSchedule } from "./_GroupSchedule";
+import { GroupScheduleSkeleton } from "./_Skeletons";
 import { fetchDoublesGroups } from "@/lib/db/groups";
 import { fetchAllDoublesMatchesByGroup } from "@/lib/db/matches";
 import { resolveGroup } from "@/lib/live/groups";
@@ -43,13 +44,19 @@ export default async function LiveGroupStagePage({
 
   return (
     <>
-      <GroupPills
+      <GroupSwitcher
         groups={groups}
         activeId={active.id}
         progress={progress}
         basePath="/live"
-      />
-      <GroupSchedule group={active} matches={matchesByGroup.get(active.id) ?? []} />
+        skeleton={
+          <GroupScheduleSkeleton
+            matches={matchesByGroup.get(active.id)?.length ?? 10}
+          />
+        }
+      >
+        <GroupSchedule group={active} matches={matchesByGroup.get(active.id) ?? []} />
+      </GroupSwitcher>
     </>
   );
 }
