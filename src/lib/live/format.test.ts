@@ -6,7 +6,7 @@ import {
   shortGroupName,
   statusLabel,
   isGroupComplete,
-  advancesToKo,
+  qualification,
   timeLabel,
 } from "./format";
 import type { SetScore } from "@/lib/schemas/match";
@@ -92,17 +92,39 @@ describe("isGroupComplete", () => {
   });
 });
 
-describe("advancesToKo", () => {
-  test("hạng trong suất đi tiếp, bảng đã xong", () => {
-    expect(advancesToKo(2, true, 2)).toBe(true);
+describe("qualification", () => {
+  // slots = 2 (điều lệ: hai cặp đầu bảng vào tứ kết)
+  const q = (ranks: number[], rank: number, complete = true) =>
+    qualification(ranks, rank, complete, 2);
+
+  test("bảng chưa đấu xong thì chưa ai chắc suất", () => {
+    expect(q([1, 2, 3, 4, 5], 1, false)).toBe("pending");
   });
 
-  test("hạng ngoài suất đi tiếp", () => {
-    expect(advancesToKo(3, true, 2)).toBe(false);
+  test("xếp hạng rõ ràng: hai cặp đầu đi tiếp, còn lại bị loại", () => {
+    expect(q([1, 2, 3, 4, 5], 1)).toBe("advance");
+    expect(q([1, 2, 3, 4, 5], 2)).toBe("advance");
+    expect(q([1, 2, 3, 4, 5], 3)).toBe("out");
   });
 
-  test("bảng chưa xong thì chưa ai chắc suất", () => {
-    expect(advancesToKo(1, false, 2)).toBe(false);
+  test("hai cặp đồng hạng nhất vẫn đi tiếp cả hai — vừa đúng hai suất", () => {
+    expect(q([1, 1, 3, 4, 5], 1)).toBe("advance");
+    expect(q([1, 1, 3, 4, 5], 3)).toBe("out");
+  });
+
+  test("đồng hạng nhì thì hạng nhất vẫn chắc suất, hai cặp nhì phải bốc thăm", () => {
+    expect(q([1, 2, 2, 4, 5], 1)).toBe("advance");
+    expect(q([1, 2, 2, 4, 5], 2)).toBe("drawLots");
+    expect(q([1, 2, 2, 4, 5], 4)).toBe("out");
+  });
+
+  test("ba cặp đồng hạng nhất — ba cặp tranh hai suất, phải bốc thăm", () => {
+    expect(q([1, 1, 1, 4, 5], 1)).toBe("drawLots");
+    expect(q([1, 1, 1, 4, 5], 4)).toBe("out");
+  });
+
+  test("cả năm cặp đồng hạng — không ai được gắn nhãn đi tiếp", () => {
+    expect(q([1, 1, 1, 1, 1], 1)).toBe("drawLots");
   });
 });
 

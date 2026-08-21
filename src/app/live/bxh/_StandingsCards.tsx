@@ -1,5 +1,5 @@
 import { ChevronRight } from "lucide-react";
-import { advancesToKo, diffLabel } from "@/lib/live/format";
+import { diffLabel, qualification } from "@/lib/live/format";
 import { entryCodes } from "@/lib/live/groups";
 import { GROUP_STAGE } from "@/lib/tournament";
 import { groupColor } from "../../_groupColors";
@@ -28,6 +28,7 @@ export function StandingsCards({
   remaining: number;
 }) {
   const codes = entryCodes(group);
+  const allRanks = rows.map((r) => r.rank);
 
   if (rows.length === 0) {
     return (
@@ -40,17 +41,20 @@ export function StandingsCards({
   return (
     <div className="flex flex-col gap-2.5 md:grid md:grid-cols-2 md:gap-3">
       {rows.map((row) => {
-        const advances = advancesToKo(
+        const status = qualification(
+          allRanks,
           row.rank,
           complete,
           GROUP_STAGE.advancePerGroup,
         );
         const accent =
-          complete && row.rank === 1
-            ? "border-yellow-500 border-l-[5px]"
-            : complete && row.rank === 2
-              ? "border-slate-400 border-l-[5px]"
-              : "";
+          status === "drawLots"
+            ? "border-amber-500 border-l-[5px]"
+            : status === "advance" && row.rank === 1
+              ? "border-yellow-500 border-l-[5px]"
+              : status === "advance"
+                ? "border-slate-400 border-l-[5px]"
+                : "";
         // Màu huy chương chỉ dùng khi bảng đã đấu hết. Bảng đang dở mà tô
         // vàng/bạc thì trông như đã chốt, trong khi thứ hạng còn đổi.
         const chipTone =
@@ -81,9 +85,14 @@ export function StandingsCards({
                 <span className="min-w-0 text-[1.05rem] font-bold leading-tight break-words">
                   {row.entry}
                 </span>
-                {advances && (
+                {status === "advance" && (
                   <span className="shrink-0 rounded border border-emerald-600 bg-emerald-500/15 px-1.5 py-0.5 text-[0.6rem] font-bold uppercase tracking-wide text-emerald-700 dark:text-emerald-400">
                     Đi tiếp
+                  </span>
+                )}
+                {status === "drawLots" && (
+                  <span className="shrink-0 rounded border border-amber-600 bg-amber-500/15 px-1.5 py-0.5 text-[0.6rem] font-bold uppercase tracking-wide text-amber-700 dark:text-amber-400">
+                    Bốc thăm
                   </span>
                 )}
               </div>
@@ -112,6 +121,19 @@ export function StandingsCards({
           </article>
         );
       })}
+
+      {complete &&
+        rows.some((r) =>
+          qualification(allRanks, r.rank, complete, GROUP_STAGE.advancePerGroup) ===
+          "drawLots",
+        ) && (
+          <p className="rounded-xl border border-amber-500/50 bg-amber-500/10 px-3 py-2.5 text-[0.8rem] leading-relaxed text-amber-800 md:col-span-2 dark:text-amber-300">
+            <strong className="font-bold">Đồng hạng ở suất cuối.</strong> Các cặp gắn
+            nhãn <strong className="font-bold">Bốc thăm</strong> bằng nhau ở mọi tiêu
+            chí phân định, hệ thống không tự chọn được ai đi tiếp — BTC quyết bằng bốc
+            thăm theo điều lệ.
+          </p>
+        )}
 
       {!complete && (
         <p className="px-2 text-center text-[0.75rem] leading-relaxed text-muted-foreground md:col-span-2">

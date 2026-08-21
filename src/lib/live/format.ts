@@ -67,11 +67,38 @@ export function isGroupComplete(
   );
 }
 
-/** Chỉ gắn nhãn "đi tiếp" khi bảng đã xong — chưa xong thì thứ hạng còn đổi. */
-export function advancesToKo(
+export type Qualification =
+  /** Bảng chưa đấu xong — thứ hạng còn đổi, chưa gắn nhãn gì. */
+  | "pending"
+  /** Chắc suất vào vòng loại trực tiếp. */
+  | "advance"
+  /** Đồng hạng ngay chỗ cắt suất — hệ thống không tự chọn, BTC bốc thăm. */
+  | "drawLots"
+  /** Không còn cơ hội. */
+  | "out";
+
+/**
+ * Cặp này đi tiếp, phải bốc thăm, hay bị loại.
+ *
+ * Không chỉ so `rank <= slots` được: khi bảng con không phân định nổi, nhiều cặp
+ * cùng mang một hạng. Ví dụ ba cặp cùng hạng 1 tranh hai suất — so kiểu cũ thì
+ * cả ba đều "đi tiếp", màn hình nói ba cặp vào tứ kết trong khi chỉ có hai chỗ.
+ *
+ * Xét theo số cặp xếp TRÊN và số cặp CÙNG hạng:
+ *   - trên + cùng hạng ≤ số suất  → cả nhóm này lọt, chắc suất
+ *   - số cặp xếp trên ≥ số suất   → hết chỗ, bị loại
+ *   - còn lại                     → nhóm này vắt ngang chỗ cắt, phải bốc thăm
+ */
+export function qualification(
+  allRanks: readonly number[],
   rank: number,
   groupComplete: boolean,
-  advancePerGroup: number,
-): boolean {
-  return groupComplete && rank <= advancePerGroup;
+  slots: number,
+): Qualification {
+  if (!groupComplete) return "pending";
+  const better = allRanks.filter((r) => r < rank).length;
+  const same = allRanks.filter((r) => r === rank).length;
+  if (better + same <= slots) return "advance";
+  if (better >= slots) return "out";
+  return "drawLots";
 }
