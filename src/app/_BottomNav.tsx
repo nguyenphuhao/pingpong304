@@ -11,6 +11,8 @@ export function BottomNav() {
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   if (pathname.startsWith("/admin")) return null;
+  // /live có bottom nav riêng ba tab — xem src/app/live/_LiveBottomNav.tsx
+  if (pathname === "/live" || pathname.startsWith("/live/")) return null;
 
   const onHome = pathname === "/";
   const onDoubles = pathname === "/d" || pathname.startsWith("/d/");
