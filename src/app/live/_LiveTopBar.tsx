@@ -1,6 +1,8 @@
 "use client";
 
 import Image from "next/image";
+import { Moon, Sun } from "lucide-react";
+import { useTheme } from "next-themes";
 import { stepFontSize } from "@/lib/live/nav";
 import { TOURNAMENT } from "@/lib/tournament";
 import { useFontSize } from "../_FontSizeProvider";
@@ -14,6 +16,7 @@ import { useFontSize } from "../_FontSizeProvider";
  */
 export function LiveTopBar() {
   const { size, setSize } = useFontSize();
+  const { setTheme } = useTheme();
 
   return (
     <header className="sticky top-0 z-40 bg-[#0E2A4E] text-white">
@@ -40,12 +43,44 @@ export function LiveTopBar() {
           <p className="text-[0.6rem] font-semibold uppercase tracking-[0.09em] text-sky-200">
             {TOURNAMENT.club}
           </p>
-          <p className="truncate text-base font-bold leading-tight">
+          {/*
+            Xuống dòng chứ KHÔNG cắt. Thêm nút đổi nền là ba nút chiếm 144px,
+            đo ở khổ 375px thì ô chứa tên còn 220px trong khi tên cần 254px —
+            để truncate là hiện "Giải mừng Quốc khán…". Người xem trên 50 tuổi
+            mà phải đoán nốt phần bị cắt thì hỏng mục đích của cả màn này.
+          */}
+          <p className="text-base font-bold leading-tight text-balance">
             {TOURNAMENT.shortName}
           </p>
         </div>
 
         <div className="flex shrink-0 items-center gap-1.5">
+          {/*
+            Icon đổi bằng CSS chứ không bằng state React. next-themes gắn class
+            "dark" lên <html> bằng script chạy trước hydrate, nên biến thể dark:
+            đúng ngay khung hình đầu. Cho JSX đọc theme thì server render một
+            đằng client một nẻo — đúng lỗi hydrate đã gặp ở nút A−/A+.
+
+            Nhãn cố định "Đổi nền sáng / tối" vì nhãn phụ thuộc nền hiện tại thì
+            cũng lệch; câu này đúng ở cả hai chiều.
+          */}
+          <button
+            type="button"
+            aria-label="Đổi nền sáng / tối"
+            onClick={() =>
+              setTheme(
+                document.documentElement.classList.contains("dark")
+                  ? "light"
+                  : "dark",
+              )
+            }
+            style={{ touchAction: "manipulation" }}
+            className="flex size-11 items-center justify-center rounded-lg border border-white/30 bg-white/10 transition-colors active:bg-white/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-white"
+          >
+            <Sun aria-hidden className="hidden size-[1.15rem] dark:block" />
+            <Moon aria-hidden className="size-[1.15rem] dark:hidden" />
+          </button>
+
           <FontSizeButton
             label="Giảm cỡ chữ"
             text="A−"
