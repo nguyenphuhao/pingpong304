@@ -5,11 +5,15 @@ import {
   fetchTeamMatchesByGroup,
 } from "@/lib/db/matches";
 import { fetchDoublesGroups, fetchTeamGroups } from "@/lib/db/groups";
+import { matchTimeAt } from "@/lib/live/format";
+import { GROUP_STAGE } from "@/lib/tournament";
 import { resolveGroup } from "./resolve-group";
 
 export const getUpcomingMatchesTool = tool({
   description:
-    "Lấy danh sách trận sắp tới. Có thể lọc theo bảng (groupId — chấp nhận id 'gA' hoặc tên 'Bảng A'/'A') hoặc theo cặp/đội (entityId). Mặc định limit=5.",
+    "Lấy danh sách trận sắp tới, kèm số thứ tự trận trong bảng, GIỜ DỰ KIẾN và SỐ BÀN. " +
+    "Dùng tool này cho mọi câu hỏi về lịch: trận mấy giờ, đánh bàn nào, khi nào tới lượt. " +
+    "Có thể lọc theo bảng (groupId — chấp nhận id 'gA' hoặc tên 'Bảng A'/'A') hoặc theo cặp/đội (entityId). Mặc định limit=5.",
   inputSchema: z.object({
     groupId: z.string().optional(),
     entityId: z.string().optional(),
@@ -20,20 +24,35 @@ export const getUpcomingMatchesTool = tool({
     if (type === "doubles") {
       const allGroups = await fetchDoublesGroups();
       const groups = groupId ? [resolveGroup(groupId, allGroups)] : allGroups;
-      const allMatches = (
-        await Promise.all(groups.map((g) => fetchDoublesMatchesByGroup(g.id)))
-      ).flat();
+      // Giữ chỉ số trong bảng TRƯỚC khi gộp các bảng: giờ dự kiến suy từ chỉ số
+      // đó, gộp xong mới đánh số là ra giờ của bảng khác.
+      const perGroup = await Promise.all(
+        groups.map((g) => fetchDoublesMatchesByGroup(g.id)),
+      );
+      const allMatches = perGroup.flatMap((ms) =>
+        ms.map((m, i) => ({ match: m, no: i + 1 })),
+      );
       const filtered = allMatches
-        .filter((m) => m.status === "scheduled" || m.status === "live")
         .filter(
-          (m) =>
+          ({ match: m }) => m.status === "scheduled" || m.status === "live",
+        )
+        .filter(
+          ({ match: m }) =>
             !entityId || m.pairA.id === entityId || m.pairB.id === entityId,
         )
         .slice(0, limit);
       return {
-        matches: filtered.map((m) => ({
+        matches: filtered.map(({ match: m, no }) => ({
           id: m.id,
           groupId: m.groupId,
+          no,
+          table: m.table,
+          // Giờ không nằm trong DB — suy như màn /live để hai nơi nói cùng một giờ.
+          estimatedTime: matchTimeAt(
+            GROUP_STAGE.startTime,
+            GROUP_STAGE.slotMinutes,
+            no - 1,
+          ),
           pairA: m.pairA,
           pairB: m.pairB,
           status: m.status,

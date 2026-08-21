@@ -1,11 +1,11 @@
 /**
  * Model dùng cho mọi tính năng AI, gọi qua Vercel AI Gateway.
  *
- * Trước đây là "anthropic/claude-haiku-4.5", nhưng tài khoản Gateway của dự án
- * đang ở gói miễn phí và model đó đòi credit trả phí — cả ba route AI cùng trả
- * về lỗi "Free tier users do not have access to this model", nghĩa là người xem
- * bấm vào trợ lý rồi không nhận được gì.
+ * Đặt một chỗ vì trước đây model được lặp ở cả ba route AI — khi tài khoản
+ * Gateway hết quyền dùng model, phải sửa ba nơi mới hết lỗi và rất dễ sót.
  *
- * Đặt một chỗ để đổi model không phải sửa ba file và không sợ sót.
+ * Đổi model thì kiểm hai thứ, đừng chỉ kiểm "có trả lời không":
+ *   1. Gọi được tool — chat tra dữ liệu qua tool, model yếu sẽ trả lời chay
+ *   2. Chịu được nhiều câu hỏi liên tiếp — gói Gateway giới hạn tần suất
  */
-export const AI_MODEL = "openai/gpt-5-nano";
+export const AI_MODEL = "anthropic/claude-haiku-4.5";
